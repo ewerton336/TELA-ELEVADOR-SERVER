@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TELA-ELEVADOR-SERVER.Api", "TELA-ELEVADOR-SERVER.Api\TELA-ELEVADOR-SERVER.Api.csproj", "{B54D289F-2A2A-42C9-B9ED-984EA5EA47AE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TELA-ELEVADOR-SERVER.Application", "TELA-ELEVADOR-SERVER.Application\TELA-ELEVADOR-SERVER.Application.csproj", "{64587801-B20B-43B0-A58F-8A7C8E5F48AC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TELA-ELEVADOR-SERVER.Domain", "TELA-ELEVADOR-SERVER.Domain\TELA-ELEVADOR-SERVER.Domain.csproj", "{E91E2AD7-9A01-4C1A-B901-DD85A1017AE8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TELA-ELEVADOR-SERVER.Infrastructure", "TELA-ELEVADOR-SERVER.Infrastructure\TELA-ELEVADOR-SERVER.Infrastructure.csproj", "{E2BFC8C4-1866-4838-A61C-4D6B5E448845}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TELA-ELEVADOR-SERVER.EntityFrameworkCore", "TELA-ELEVADOR-SERVER.EntityFrameworkCore\TELA-ELEVADOR-SERVER.EntityFrameworkCore.csproj", "{5BA2502A-50D6-4ECB-8106-531D0ED3EFB3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B54D289F-2A2A-42C9-B9ED-984EA5EA47AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B54D289F-2A2A-42C9-B9ED-984EA5EA47AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B54D289F-2A2A-42C9-B9ED-984EA5EA47AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B54D289F-2A2A-42C9-B9ED-984EA5EA47AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64587801-B20B-43B0-A58F-8A7C8E5F48AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64587801-B20B-43B0-A58F-8A7C8E5F48AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64587801-B20B-43B0-A58F-8A7C8E5F48AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64587801-B20B-43B0-A58F-8A7C8E5F48AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E91E2AD7-9A01-4C1A-B901-DD85A1017AE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E91E2AD7-9A01-4C1A-B901-DD85A1017AE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E91E2AD7-9A01-4C1A-B901-DD85A1017AE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E91E2AD7-9A01-4C1A-B901-DD85A1017AE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2BFC8C4-1866-4838-A61C-4D6B5E448845}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2BFC8C4-1866-4838-A61C-4D6B5E448845}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2BFC8C4-1866-4838-A61C-4D6B5E448845}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2BFC8C4-1866-4838-A61C-4D6B5E448845}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5BA2502A-50D6-4ECB-8106-531D0ED3EFB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5BA2502A-50D6-4ECB-8106-531D0ED3EFB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5BA2502A-50D6-4ECB-8106-531D0ED3EFB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5BA2502A-50D6-4ECB-8106-531D0ED3EFB3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

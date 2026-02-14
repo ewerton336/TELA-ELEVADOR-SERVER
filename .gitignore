@@ -1,0 +1,91 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+
+# Visual Studio user-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Rider IDE
+.idea/
+*.sln.iml
+*.iml
+.idea/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Resharper/CodeCleanup
+_ReSharper*/
+*.DotSettings.user
+
+# Local Environment files
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+*.nupkg
+*.snupkg
+*.dll
+*.pdb
+*.exe
+
+# Rider specific files/directories
+.idea_modules/
+*.iml
+*.iws
+*.ipr
+*.iml
+
+# NuGet
+.nuget/
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+
+# dotCover
+.dotCover
+
+# OpenCover UI
+OpenCover/
+
+# Logs
+*.[Ll]og
+
+# Deployment artifacts
+publish/
+PublishProfiles/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.AppleDouble
+.LSOverride
+._*
