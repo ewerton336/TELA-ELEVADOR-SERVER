@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TELA-ELEVADOR-SERVER.Application\TELA-ELEVADOR-SERVER.Application.csproj" />
     <ProjectReference Include="..\TELA-ELEVADOR-SERVER.Domain\TELA-ELEVADOR-SERVER.Domain.csproj" />
+    <ProjectReference Include="..\TELA-ELEVADOR-SERVER.EntityFrameworkCore\TELA-ELEVADOR-SERVER.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

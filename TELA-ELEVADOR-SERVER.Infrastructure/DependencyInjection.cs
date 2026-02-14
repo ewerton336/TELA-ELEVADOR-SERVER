@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using TELA_ELEVADOR_SERVER.Infrastructure.Persistence;
+using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
 
 namespace TELA_ELEVADOR_SERVER.Infrastructure;
 
@@ -11,7 +11,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Postgres");
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         if (!string.IsNullOrWhiteSpace(connectionString))
         {

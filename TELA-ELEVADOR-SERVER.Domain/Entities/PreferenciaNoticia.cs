@@ -2,8 +2,8 @@ namespace TELA_ELEVADOR_SERVER.Domain.Entities;
 
 public sealed class PreferenciaNoticia
 {
-    public Guid PredioId { get; set; }
-    public Guid FonteNoticiaId { get; set; }
+    public int PredioId { get; set; }
+    public int FonteNoticiaId { get; set; }
     public bool Habilitado { get; set; }
     public DateTime CriadoEm { get; set; }
 

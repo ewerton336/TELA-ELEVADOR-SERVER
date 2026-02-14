@@ -287,6 +287,21 @@
         "runtime": {
           "bin/placeholder/TELA-ELEVADOR-SERVER.Domain.dll": {}
         }
+      },
+      "TELA-ELEVADOR-SERVER.EntityFrameworkCore/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "9.0.2",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.2",
+          "TELA-ELEVADOR-SERVER.Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/TELA-ELEVADOR-SERVER.EntityFrameworkCore.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/TELA-ELEVADOR-SERVER.EntityFrameworkCore.dll": {}
+        }
       }
     }
   },
@@ -710,6 +725,11 @@
       "type": "project",
       "path": "../TELA-ELEVADOR-SERVER.Domain/TELA-ELEVADOR-SERVER.Domain.csproj",
       "msbuildProject": "../TELA-ELEVADOR-SERVER.Domain/TELA-ELEVADOR-SERVER.Domain.csproj"
+    },
+    "TELA-ELEVADOR-SERVER.EntityFrameworkCore/1.0.0": {
+      "type": "project",
+      "path": "../TELA-ELEVADOR-SERVER.EntityFrameworkCore/TELA-ELEVADOR-SERVER.EntityFrameworkCore.csproj",
+      "msbuildProject": "../TELA-ELEVADOR-SERVER.EntityFrameworkCore/TELA-ELEVADOR-SERVER.EntityFrameworkCore.csproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -717,7 +737,8 @@
       "Microsoft.EntityFrameworkCore >= 9.0.2",
       "Npgsql.EntityFrameworkCore.PostgreSQL >= 9.0.2",
       "TELA-ELEVADOR-SERVER.Application >= 1.0.0",
-      "TELA-ELEVADOR-SERVER.Domain >= 1.0.0"
+      "TELA-ELEVADOR-SERVER.Domain >= 1.0.0",
+      "TELA-ELEVADOR-SERVER.EntityFrameworkCore >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -758,6 +779,9 @@
             },
             "C:\\Users\\Ewerton\\Desktop\\Projetos Dev\\tela-elevador\\TELA-ELEVADOR-SERVER\\TELA-ELEVADOR-SERVER.Domain\\TELA-ELEVADOR-SERVER.Domain.csproj": {
               "projectPath": "C:\\Users\\Ewerton\\Desktop\\Projetos Dev\\tela-elevador\\TELA-ELEVADOR-SERVER\\TELA-ELEVADOR-SERVER.Domain\\TELA-ELEVADOR-SERVER.Domain.csproj"
+            },
+            "C:\\Users\\Ewerton\\Desktop\\Projetos Dev\\tela-elevador\\TELA-ELEVADOR-SERVER\\TELA-ELEVADOR-SERVER.EntityFrameworkCore\\TELA-ELEVADOR-SERVER.EntityFrameworkCore.csproj": {
+              "projectPath": "C:\\Users\\Ewerton\\Desktop\\Projetos Dev\\tela-elevador\\TELA-ELEVADOR-SERVER\\TELA-ELEVADOR-SERVER.EntityFrameworkCore\\TELA-ELEVADOR-SERVER.EntityFrameworkCore.csproj"
             }
           }
         }

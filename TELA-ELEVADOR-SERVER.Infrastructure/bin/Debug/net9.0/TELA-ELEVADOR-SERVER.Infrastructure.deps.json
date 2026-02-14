@@ -11,7 +11,8 @@
           "Microsoft.EntityFrameworkCore": "9.0.2",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.2",
           "TELA-ELEVADOR-SERVER.Application": "1.0.0",
-          "TELA-ELEVADOR-SERVER.Domain": "1.0.0"
+          "TELA-ELEVADOR-SERVER.Domain": "1.0.0",
+          "TELA-ELEVADOR-SERVER.EntityFrameworkCore": "1.0.0"
         },
         "runtime": {
           "TELA-ELEVADOR-SERVER.Infrastructure.dll": {}
@@ -196,6 +197,19 @@
             "fileVersion": "1.0.0.0"
           }
         }
+      },
+      "TELA-ELEVADOR-SERVER.EntityFrameworkCore/1.0.0": {
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "9.0.2",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.2",
+          "TELA-ELEVADOR-SERVER.Domain": "1.0.0"
+        },
+        "runtime": {
+          "TELA-ELEVADOR-SERVER.EntityFrameworkCore.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
       }
     }
   },
@@ -316,6 +330,11 @@
       "sha512": ""
     },
     "TELA-ELEVADOR-SERVER.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "TELA-ELEVADOR-SERVER.EntityFrameworkCore/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

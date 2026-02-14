@@ -1,4 +1,4 @@
-﻿namespace TELA_ELEVADOR_SERVER.Infrastructure;
+namespace TELA_ELEVADOR_SERVER.Infrastructure;
 
 public class Class1
 {

@@ -139,3 +139,13 @@ C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-EL
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Api.pdb
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Api.genruntimeconfig.cache
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\obj\Debug\net9.0\ref\TELA-ELEVADOR-SERVER.Api.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\bin\Debug\net9.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\bin\Debug\net9.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\bin\Debug\net9.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\bin\Debug\net9.0\Microsoft.IdentityModel.Protocols.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\bin\Debug\net9.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\bin\Debug\net9.0\Microsoft.IdentityModel.Tokens.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.EntityFrameworkCore.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Api\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.EntityFrameworkCore.pdb

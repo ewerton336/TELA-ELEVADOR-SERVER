@@ -16,3 +16,5 @@ C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-EL
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\obj\Debug\net9.0\refint\TELA-ELEVADOR-SERVER.Infrastructure.dll
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Infrastructure.pdb
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\obj\Debug\net9.0\ref\TELA-ELEVADOR-SERVER.Infrastructure.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.EntityFrameworkCore.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.EntityFrameworkCore.pdb

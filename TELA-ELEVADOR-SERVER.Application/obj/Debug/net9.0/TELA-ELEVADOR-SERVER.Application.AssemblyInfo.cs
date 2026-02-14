@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TELA-ELEVADOR-SERVER.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f2da4deca0e5f5e710f8e62bf1819c067e7222a0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f6c7ed77431e84f58697b0d8da2d7bd3a56a17b4")]
 [assembly: System.Reflection.AssemblyProductAttribute("TELA-ELEVADOR-SERVER.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TELA-ELEVADOR-SERVER.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
