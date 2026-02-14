@@ -1,0 +1,6 @@
+@TELA_ELEVADOR_SERVER.Api_HostAddress = http://localhost:5009
+
+GET {{TELA_ELEVADOR_SERVER.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

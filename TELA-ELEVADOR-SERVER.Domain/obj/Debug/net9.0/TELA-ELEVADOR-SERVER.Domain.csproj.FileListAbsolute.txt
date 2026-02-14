@@ -1,0 +1,12 @@
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.deps.json
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.pdb
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.AssemblyInfoInputs.cache
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.AssemblyInfo.cs
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.csproj.CoreCompileInputs.cache
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.sourcelink.json
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\obj\Debug\net9.0\refint\TELA-ELEVADOR-SERVER.Domain.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.pdb
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Domain\obj\Debug\net9.0\ref\TELA-ELEVADOR-SERVER.Domain.dll

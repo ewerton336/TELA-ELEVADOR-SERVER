@@ -1,0 +1,16 @@
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.deps.json
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.pdb
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.pdb
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.csproj.AssemblyReference.cache
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.AssemblyInfoInputs.cache
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.AssemblyInfo.cs
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.csproj.CoreCompileInputs.cache
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.sourcelink.json
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\TELA-ELE.15829613.Up2Date
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\refint\TELA-ELEVADOR-SERVER.Application.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.pdb
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Application\obj\Debug\net9.0\ref\TELA-ELEVADOR-SERVER.Application.dll

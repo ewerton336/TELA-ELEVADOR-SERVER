@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "TELA-ELEVADOR-SERVER.Application/1.0.0": {
+        "dependencies": {
+          "TELA-ELEVADOR-SERVER.Domain": "1.0.0"
+        },
+        "runtime": {
+          "TELA-ELEVADOR-SERVER.Application.dll": {}
+        }
+      },
+      "TELA-ELEVADOR-SERVER.Domain/1.0.0": {
+        "runtime": {
+          "TELA-ELEVADOR-SERVER.Domain.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "TELA-ELEVADOR-SERVER.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "TELA-ELEVADOR-SERVER.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
