@@ -80,7 +80,16 @@ public sealed class AdminAvisoController : ControllerBase
         _dbContext.Avisos.Add(aviso);
         await _dbContext.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetAvisos), new { slug }, new { aviso.Id });
+        return CreatedAtAction(nameof(GetAvisos), new { slug }, new
+        {
+            aviso.Id,
+            aviso.Titulo,
+            aviso.Mensagem,
+            aviso.InicioEm,
+            aviso.FimEm,
+            aviso.Ativo,
+            aviso.CriadoEm
+        });
     }
 
     [HttpPut("{id:int}")]
@@ -115,7 +124,16 @@ public sealed class AdminAvisoController : ControllerBase
         aviso.Ativo = request.Ativo;
 
         await _dbContext.SaveChangesAsync();
-        return Ok(new { aviso.Id });
+        return Ok(new
+        {
+            aviso.Id,
+            aviso.Titulo,
+            aviso.Mensagem,
+            aviso.InicioEm,
+            aviso.FimEm,
+            aviso.Ativo,
+            aviso.CriadoEm
+        });
     }
 
     [HttpDelete("{id:int}")]

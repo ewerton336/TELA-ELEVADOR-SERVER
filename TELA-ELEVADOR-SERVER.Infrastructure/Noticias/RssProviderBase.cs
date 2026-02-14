@@ -72,6 +72,29 @@ public abstract class RssProviderBase
         return CleanHtml(value);
     }
 
+    protected static string TrimToNextPunctuation(string text, int minLength)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        if (text.Length <= minLength)
+        {
+            return text.Trim();
+        }
+
+        var punctuation = new[] { '.', '!', '?', ';', ':' };
+        var index = text.IndexOfAny(punctuation, minLength);
+
+        if (index < 0)
+        {
+            return text[..minLength].Trim();
+        }
+
+        return text[..(index + 1)].Trim();
+    }
+
     protected static string CleanHtml(string html)
     {
         return HtmlRegex.Replace(WebUtility.HtmlDecode(html ?? string.Empty), " ")
@@ -238,10 +261,11 @@ public abstract class RssProviderBase
         string source,
         string? category)
     {
+        var normalizedDescription = TrimToNextPunctuation(description, 200);
         return new NoticiaItem(
             GenerateId(title),
             title,
-            description,
+            normalizedDescription,
             link,
             thumbnail,
             pubDate,

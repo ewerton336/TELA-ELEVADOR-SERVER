@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -27,6 +28,7 @@ builder.Services.AddScoped<INoticiaProvider, G1NoticiaProvider>();
 builder.Services.AddScoped<INoticiaProvider, SantaPortalNoticiaProvider>();
 builder.Services.AddScoped<INoticiaProvider, DiarioLitoralNoticiaProvider>();
 builder.Services.AddScoped<INoticiaService, NoticiaService>();
+builder.Services.AddHostedService<NoticiaBackgroundWorker>();
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IDbSeeder, DbSeeder>();
@@ -56,7 +58,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("PredioMatchesSlug", policy =>
         policy.Requirements.Add(new PredioMatchesSlugRequirement()));
     options.AddPolicy("DeveloperOnly", policy =>
-        policy.RequireClaim("role", "Developer"));
+        policy.RequireClaim(ClaimTypes.Role, "Developer"));
 });
 
 builder.Services.AddSingleton<IAuthorizationHandler, PredioMatchesSlugHandler>();

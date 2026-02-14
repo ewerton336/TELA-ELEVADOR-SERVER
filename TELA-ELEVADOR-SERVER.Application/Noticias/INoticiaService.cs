@@ -2,5 +2,5 @@ namespace TELA_ELEVADOR_SERVER.Application.Noticias;
 
 public interface INoticiaService
 {
-    Task<List<NoticiaItem>> BuscarNoticiasAsync(IEnumerable<string> chaves);
+    Task<List<NoticiaItem>> BuscarNoticiasAsync(IEnumerable<string> chaves, int take = 30);
 }

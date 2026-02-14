@@ -15,6 +15,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<Aviso> Avisos => Set<Aviso>();
     public DbSet<FonteNoticia> FontesNoticia => Set<FonteNoticia>();
     public DbSet<PreferenciaNoticia> PreferenciasNoticia => Set<PreferenciaNoticia>();
+    public DbSet<Noticia> Noticias => Set<Noticia>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

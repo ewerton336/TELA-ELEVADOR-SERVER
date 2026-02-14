@@ -19,7 +19,7 @@ public sealed class PublicNoticiaController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetNoticias([FromRoute] string slug)
+    public async Task<IActionResult> GetNoticias([FromRoute] string slug, [FromQuery] int take = 30)
     {
         var predio = await _dbContext.Predios
             .AsNoTracking()
@@ -60,7 +60,8 @@ public sealed class PublicNoticiaController : ControllerBase
                 .ToListAsync();
         }
 
-        var items = await _noticiaService.BuscarNoticiasAsync(enabledChaves);
+        var normalizedTake = Math.Clamp(take, 1, 50);
+        var items = await _noticiaService.BuscarNoticiasAsync(enabledChaves, normalizedTake);
 
         return Ok(new
         {

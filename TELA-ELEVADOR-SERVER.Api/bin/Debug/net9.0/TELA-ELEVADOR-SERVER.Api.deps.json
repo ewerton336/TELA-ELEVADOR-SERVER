@@ -477,6 +477,44 @@
           }
         }
       },
+      "Microsoft.Extensions.Diagnostics.Abstractions/9.0.2": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.2",
+          "Microsoft.Extensions.Options": "9.0.2"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.Extensions.Diagnostics.Abstractions.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.225.6610"
+          }
+        }
+      },
+      "Microsoft.Extensions.FileProviders.Abstractions/9.0.2": {
+        "dependencies": {
+          "Microsoft.Extensions.Primitives": "9.0.2"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.Extensions.FileProviders.Abstractions.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.225.6610"
+          }
+        }
+      },
+      "Microsoft.Extensions.Hosting.Abstractions/9.0.2": {
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "9.0.2",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.2",
+          "Microsoft.Extensions.Diagnostics.Abstractions": "9.0.2",
+          "Microsoft.Extensions.FileProviders.Abstractions": "9.0.2",
+          "Microsoft.Extensions.Logging.Abstractions": "9.0.2"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.Extensions.Hosting.Abstractions.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.225.6610"
+          }
+        }
+      },
       "Microsoft.Extensions.Logging/9.0.2": {
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection": "9.0.2",
@@ -798,6 +836,7 @@
       "TELA-ELEVADOR-SERVER.Infrastructure/1.0.0": {
         "dependencies": {
           "Microsoft.EntityFrameworkCore": "9.0.2",
+          "Microsoft.Extensions.Hosting.Abstractions": "9.0.2",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.2",
           "TELA-ELEVADOR-SERVER.Application": "1.0.0",
           "TELA-ELEVADOR-SERVER.Domain": "1.0.0",
@@ -992,6 +1031,27 @@
       "sha512": "sha512-3ImbcbS68jy9sKr9Z9ToRbEEX0bvIRdb8zyf5ebtL9Av2CUCGHvaO5wsSXfRfAjr60Vrq0tlmNji9IzAxW6EOw==",
       "path": "microsoft.extensions.dependencymodel/9.0.2",
       "hashPath": "microsoft.extensions.dependencymodel.9.0.2.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Diagnostics.Abstractions/9.0.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-kFwIZEC/37cwKuEm/nXvjF7A/Myz9O7c7P9Csgz6AOiiDE62zdOG5Bu7VkROu1oMYaX0wgijPJ5LqVt6+JKjVg==",
+      "path": "microsoft.extensions.diagnostics.abstractions/9.0.2",
+      "hashPath": "microsoft.extensions.diagnostics.abstractions.9.0.2.nupkg.sha512"
+    },
+    "Microsoft.Extensions.FileProviders.Abstractions/9.0.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-IcOBmTlr2jySswU+3x8c3ql87FRwTVPQgVKaV5AXzPT5u0VItfNU8SMbESpdSp5STwxT/1R99WYszgHWsVkzhg==",
+      "path": "microsoft.extensions.fileproviders.abstractions/9.0.2",
+      "hashPath": "microsoft.extensions.fileproviders.abstractions.9.0.2.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Hosting.Abstractions/9.0.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-PvjZW6CMdZbPbOwKsQXYN5VPtIWZQqdTRuBPZiW3skhU3hymB17XSlLVC4uaBbDZU+/3eHG3p80y+MzZxZqR7Q==",
+      "path": "microsoft.extensions.hosting.abstractions/9.0.2",
+      "hashPath": "microsoft.extensions.hosting.abstractions.9.0.2.nupkg.sha512"
     },
     "Microsoft.Extensions.Logging/9.0.2": {
       "type": "package",

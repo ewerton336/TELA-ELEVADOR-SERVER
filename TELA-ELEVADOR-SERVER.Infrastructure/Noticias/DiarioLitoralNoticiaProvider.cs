@@ -44,7 +44,7 @@ public sealed class DiarioLitoralNoticiaProvider : RssProviderBase, INoticiaProv
                 ?? ExtractFirstImage(rawDescription);
 
             thumbnail = string.IsNullOrWhiteSpace(thumbnail) ? placeholder : UpgradeImageUrl(thumbnail);
-            var description = ExtractFirstParagraph(rawDescription);
+            var description = TrimToNextPunctuation(ExtractFirstParagraph(rawDescription), 200);
 
             items.Add(BuildItem(title, description, link, thumbnail, pubDate, source, null));
         }

@@ -3,8 +3,10 @@ C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-EL
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Infrastructure.pdb
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.dll
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.dll
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.EntityFrameworkCore.dll
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Application.pdb
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.Domain.pdb
+C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.EntityFrameworkCore.pdb
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Infrastructure.csproj.AssemblyReference.cache
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Infrastructure.AssemblyInfoInputs.cache
@@ -16,5 +18,3 @@ C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-EL
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\obj\Debug\net9.0\refint\TELA-ELEVADOR-SERVER.Infrastructure.dll
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\obj\Debug\net9.0\TELA-ELEVADOR-SERVER.Infrastructure.pdb
 C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\obj\Debug\net9.0\ref\TELA-ELEVADOR-SERVER.Infrastructure.dll
-C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.EntityFrameworkCore.dll
-C:\Users\Ewerton\Desktop\Projetos Dev\tela-elevador\TELA-ELEVADOR-SERVER\TELA-ELEVADOR-SERVER.Infrastructure\bin\Debug\net9.0\TELA-ELEVADOR-SERVER.EntityFrameworkCore.pdb

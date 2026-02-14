@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
@@ -11,9 +12,11 @@ using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
 namespace TELA_ELEVADOR_SERVER.EntityFrameworkCore.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260214144442_UpdateSindicoRole")]
+    partial class UpdateSindicoRole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -92,71 +95,6 @@ namespace TELA_ELEVADOR_SERVER.EntityFrameworkCore.Migrations
                         .IsUnique();
 
                     b.ToTable("FonteNoticia", (string)null);
-                });
-
-            modelBuilder.Entity("TELA_ELEVADOR_SERVER.Domain.Entities.Noticia", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Categoria")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<string>("FonteChave")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("FonteNome")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("ImagemUrl")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("Link")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("PubDateRaw")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime>("PublicadoEmUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Titulo")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FonteChave");
-
-                    b.HasIndex("Link")
-                        .IsUnique();
-
-                    b.HasIndex("PublicadoEmUtc");
-
-                    b.ToTable("Noticia", (string)null);
                 });
 
             modelBuilder.Entity("TELA_ELEVADOR_SERVER.Domain.Entities.Predio", b =>

@@ -35,6 +35,7 @@ public sealed class AuthController : ControllerBase
 
         Sindico? sindico = null;
 
+        // Try to find a syndico for this building
         if (predio is not null)
         {
             sindico = await _dbContext.Sindicos
@@ -42,6 +43,7 @@ public sealed class AuthController : ControllerBase
                 .SingleOrDefaultAsync(s => s.PredioId == predio.Id && s.Usuario == request.Usuario);
         }
 
+        // If not found, try to find a developer user (they can access any building)
         if (sindico is null)
         {
             sindico = await _dbContext.Sindicos
@@ -64,6 +66,8 @@ public sealed class AuthController : ControllerBase
             return Unauthorized(new { message = "Credenciais invalidas." });
         }
 
+        // If it's a developer and a specific building was accessed, use that building
+        // Otherwise use master for developer or the building's ID for syndicos
         var tokenPredioId = predio?.Id ?? 0;
         var tokenSlug = predio?.Slug ?? "master";
         var token = BuildToken(tokenPredioId, tokenSlug, sindico.Usuario, sindico.Role);
