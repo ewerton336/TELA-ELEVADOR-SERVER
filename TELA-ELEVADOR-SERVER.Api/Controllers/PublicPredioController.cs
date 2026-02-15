@@ -33,6 +33,7 @@ public sealed class PublicPredioController : ControllerBase
             predio.Slug,
             predio.Nome,
             predio.Cidade,
+            predio.OrientationMode,
             predio.CriadoEm
         });
     }

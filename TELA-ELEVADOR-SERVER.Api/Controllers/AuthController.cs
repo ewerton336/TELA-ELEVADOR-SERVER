@@ -94,7 +94,7 @@ public sealed class AuthController : ControllerBase
             new("predioId", predioId.ToString()),
             new("slug", slug),
             new("usuario", usuario),
-            new("role", role),
+            new(ClaimTypes.Role, role),
             new(ClaimTypes.Name, usuario)
         };
 

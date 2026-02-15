@@ -30,6 +30,7 @@ public sealed class MasterPredioController : ControllerBase
                 p.Slug,
                 p.Nome,
                 p.Cidade,
+                p.OrientationMode,
                 p.CriadoEm
             })
             .ToListAsync();

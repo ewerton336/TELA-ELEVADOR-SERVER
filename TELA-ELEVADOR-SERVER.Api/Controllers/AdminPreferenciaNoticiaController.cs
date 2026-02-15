@@ -95,7 +95,7 @@ public sealed class AdminPreferenciaNoticiaController : ControllerBase
 
     private bool HasAccessToPredio(int predioId)
     {
-        var role = User.FindFirst("role")?.Value;
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
         if (string.Equals(role, "Developer", StringComparison.OrdinalIgnoreCase))
         {
             return true;

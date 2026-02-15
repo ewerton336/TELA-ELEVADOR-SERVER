@@ -75,6 +75,7 @@ public sealed class DbSeeder : IDbSeeder
                 Slug = "gramado",
                 Nome = "Gramado",
                 Cidade = "Gramado",
+                OrientationMode = "auto",
                 CriadoEm = DateTime.UtcNow
             };
             _dbContext.Predios.Add(predio);

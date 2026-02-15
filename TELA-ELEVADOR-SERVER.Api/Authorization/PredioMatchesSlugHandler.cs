@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 
 namespace TELA_ELEVADOR_SERVER.Api.Authorization;
@@ -10,7 +11,7 @@ public sealed class PredioMatchesSlugHandler : AuthorizationHandler<PredioMatche
     {
         if (context.Resource is HttpContext httpContext)
         {
-            var roleClaim = context.User.FindFirst("role")?.Value;
+            var roleClaim = context.User.FindFirst(ClaimTypes.Role)?.Value;
             if (string.Equals(roleClaim, "Developer", StringComparison.OrdinalIgnoreCase))
             {
                 context.Succeed(requirement);
