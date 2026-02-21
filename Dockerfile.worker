@@ -1,0 +1,25 @@
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+COPY ["TELA-ELEVADOR-SERVER.Worker/TELA-ELEVADOR-SERVER.Worker.csproj", "TELA-ELEVADOR-SERVER.Worker/"]
+COPY ["TELA-ELEVADOR-SERVER.Application/TELA-ELEVADOR-SERVER.Application.csproj", "TELA-ELEVADOR-SERVER.Application/"]
+COPY ["TELA-ELEVADOR-SERVER.Domain/TELA-ELEVADOR-SERVER.Domain.csproj", "TELA-ELEVADOR-SERVER.Domain/"]
+COPY ["TELA-ELEVADOR-SERVER.EntityFrameworkCore/TELA-ELEVADOR-SERVER.EntityFrameworkCore.csproj", "TELA-ELEVADOR-SERVER.EntityFrameworkCore/"]
+COPY ["TELA-ELEVADOR-SERVER.Infrastructure/TELA-ELEVADOR-SERVER.Infrastructure.csproj", "TELA-ELEVADOR-SERVER.Infrastructure/"]
+
+RUN dotnet restore "TELA-ELEVADOR-SERVER.Worker/TELA-ELEVADOR-SERVER.Worker.csproj"
+
+COPY . .
+WORKDIR "/src/TELA-ELEVADOR-SERVER.Worker"
+RUN dotnet build "TELA-ELEVADOR-SERVER.Worker.csproj" -c Release -o /app/build
+
+# Publish stage
+FROM build AS publish
+RUN dotnet publish "TELA-ELEVADOR-SERVER.Worker.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/runtime:9.0
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "TELA-ELEVADOR-SERVER.Worker.dll"]

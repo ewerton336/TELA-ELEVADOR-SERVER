@@ -15,7 +15,7 @@ public sealed class NoticiaService : INoticiaService
         _dbContext = dbContext;
     }
 
-    public async Task<List<NoticiaItem>> BuscarNoticiasAsync(IEnumerable<string> chaves,int take = 30)
+    public async Task<List<NoticiaItem>> BuscarNoticiasAsync(IEnumerable<string> chaves, int take = 30)
     {
         var enabled = chaves
             .Where(chave => !string.IsNullOrWhiteSpace(chave))
@@ -28,7 +28,7 @@ public sealed class NoticiaService : INoticiaService
         }
 
         var normalizedTake = Math.Clamp(take, 1, MaxTake);
-        
+
         // Buscar mais notícias para ter buffer suficiente de cada fonte
         var bufferMultiplier = Math.Max(3, enabled.Count);
         var fetchCount = normalizedTake * bufferMultiplier;

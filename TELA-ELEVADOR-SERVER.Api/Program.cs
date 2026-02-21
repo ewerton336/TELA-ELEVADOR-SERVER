@@ -10,6 +10,7 @@ using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
 using TELA_ELEVADOR_SERVER.Infrastructure.Noticias;
 using TELA_ELEVADOR_SERVER.Infrastructure.Seeding;
 using TELA_ELEVADOR_SERVER.Infrastructure.Security;
+using TELA_ELEVADOR_SERVER.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,15 +25,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddHttpClient();
+builder.Services.AddScoped<CidadeService>();
 builder.Services.AddScoped<INoticiaProvider, G1NoticiaProvider>();
 builder.Services.AddScoped<INoticiaProvider, SantaPortalNoticiaProvider>();
 builder.Services.AddScoped<INoticiaProvider, DiarioLitoralNoticiaProvider>();
 builder.Services.AddScoped<INoticiaService, NoticiaService>();
-builder.Services.AddSingleton<NoticiaBackgroundWorker>();
-builder.Services.AddHostedService(provider => provider.GetRequiredService<NoticiaBackgroundWorker>());
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IDbSeeder, DbSeeder>();
+builder.Services.AddScoped<CidadeSeeder>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection.GetValue<string>("Key") ?? string.Empty;
@@ -84,13 +85,52 @@ app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    
+    logger.LogInformation(">>> [STARTUP] Iniciando migração do banco de dados...");
     dbContext.Database.Migrate();
+    logger.LogInformation(">>> [STARTUP] Migração concluída.");
 
     if (app.Environment.IsDevelopment())
     {
+        logger.LogInformation(">>> [STARTUP] Ambiente: DEVELOPMENT - Iniciando CidadeSeeder...");
+        
+        // Seed de cidades (IBGE) - executado uma única vez (ou sempre em Development após TRUNCATE)
+        try
+        {
+            logger.LogInformation(">>> [STARTUP] Obtendo CidadeSeeder da DI container...");
+            var cidadeSeeder = scope.ServiceProvider.GetRequiredService<CidadeSeeder>();
+            logger.LogInformation(">>> [STARTUP] CidadeSeeder obtido. Chamando SeedCidadesSaoPauloAsync...");
+            
+            await cidadeSeeder.SeedCidadesSaoPauloAsync();
+            
+            logger.LogInformation(">>> [STARTUP] CidadeSeeder concluído com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ">>> [STARTUP] Erro ao fazer seed de cidades IBGE: {Message}", ex.Message);
+        }
+
+        logger.LogInformation(">>> [STARTUP] Iniciando DbSeeder (dados de teste)...");
         var seeder = scope.ServiceProvider.GetRequiredService<IDbSeeder>();
         await seeder.SeedAsync();
+        logger.LogInformation(">>> [STARTUP] DbSeeder concluído.");
+    }
+    else
+    {
+        logger.LogInformation(">>> [STARTUP] Ambiente: PRODUCTION - Executando CidadeSeeder se tabela vazia...");
+        
+        // Em Production, apenas tenta seed IBGE se tabela está vazia
+        try
+        {
+            var cidadeSeeder = scope.ServiceProvider.GetRequiredService<CidadeSeeder>();
+            await cidadeSeeder.SeedCidadesSaoPauloAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ">>> [STARTUP] Erro ao fazer seed de cidades IBGE em Production");
+        }
     }
 }
 

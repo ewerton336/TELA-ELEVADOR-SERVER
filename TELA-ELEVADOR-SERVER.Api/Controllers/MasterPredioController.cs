@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TELA_ELEVADOR_SERVER.Domain.Entities;
 using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
+using TELA_ELEVADOR_SERVER.Infrastructure.Services;
 
 namespace TELA_ELEVADOR_SERVER.Api.Controllers;
 
@@ -12,10 +13,12 @@ namespace TELA_ELEVADOR_SERVER.Api.Controllers;
 public sealed class MasterPredioController : ControllerBase
 {
     private readonly AppDbContext _dbContext;
+    private readonly CidadeService _cidadeService;
 
-    public MasterPredioController(AppDbContext dbContext)
+    public MasterPredioController(AppDbContext dbContext, CidadeService cidadeService)
     {
         _dbContext = dbContext;
+        _cidadeService = cidadeService;
     }
 
     [HttpGet]
@@ -23,13 +26,14 @@ public sealed class MasterPredioController : ControllerBase
     {
         var predios = await _dbContext.Predios
             .AsNoTracking()
+            .Include(p => p.Cidade)
             .OrderBy(p => p.Nome)
             .Select(p => new
             {
                 p.Id,
                 p.Slug,
                 p.Nome,
-                p.Cidade,
+                cidade = p.Cidade != null ? p.Cidade.NomeExibicao : "Sem cidade",
                 p.OrientationMode,
                 p.CriadoEm
             })
@@ -49,11 +53,14 @@ public sealed class MasterPredioController : ControllerBase
             return BadRequest(new { message = "Slug ja cadastrado." });
         }
 
+        // Criar ou obter a cidade
+        var cidade = await _cidadeService.GetOrCreateCidadeNormalizedAsync(request.Cidade);
+
         var predio = new Predio
         {
             Slug = request.Slug,
             Nome = request.Nome,
-            Cidade = request.Cidade,
+            CidadeId = cidade.Id,
             CriadoEm = DateTime.UtcNow
         };
 
@@ -79,9 +86,12 @@ public sealed class MasterPredioController : ControllerBase
             return BadRequest(new { message = "Slug ja cadastrado." });
         }
 
+        // Criar ou obter a cidade
+        var cidade = await _cidadeService.GetOrCreateCidadeNormalizedAsync(request.Cidade);
+
         predio.Slug = request.Slug;
         predio.Nome = request.Nome;
-        predio.Cidade = request.Cidade;
+        predio.CidadeId = cidade.Id;
 
         await _dbContext.SaveChangesAsync();
         return Ok(new { predio.Id });

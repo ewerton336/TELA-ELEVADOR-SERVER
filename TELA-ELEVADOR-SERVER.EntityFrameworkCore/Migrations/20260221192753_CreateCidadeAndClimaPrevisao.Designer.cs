@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
@@ -11,9 +12,11 @@ using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
 namespace TELA_ELEVADOR_SERVER.EntityFrameworkCore.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260221192753_CreateCidadeAndClimaPrevisao")]
+    partial class CreateCidadeAndClimaPrevisao
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,90 +68,6 @@ namespace TELA_ELEVADOR_SERVER.EntityFrameworkCore.Migrations
                     b.HasIndex("PredioId");
 
                     b.ToTable("Aviso", (string)null);
-                });
-
-            modelBuilder.Entity("TELA_ELEVADOR_SERVER.Domain.Entities.Cidade", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<double>("Latitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("Longitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("NomeExibicao")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Nome")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Cidade_Nome_Unique");
-
-                    b.ToTable("Cidade", (string)null);
-                });
-
-            modelBuilder.Entity("TELA_ELEVADOR_SERVER.Domain.Entities.ClimaPrevisao", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AtualizadoEm")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("CidadeId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CodigoWmo")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateOnly>("Data")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Icone")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.Property<int>("TemperaturaMaxima")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TemperaturaMinima")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CidadeId", "Data")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ClimaPrevisao_CidadeId_Data_Unique");
-
-                    b.ToTable("ClimaPrevisao", (string)null);
                 });
 
             modelBuilder.Entity("TELA_ELEVADOR_SERVER.Domain.Entities.FonteNoticia", b =>
@@ -258,8 +177,9 @@ namespace TELA_ELEVADOR_SERVER.EntityFrameworkCore.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CidadeId")
-                        .HasColumnType("integer");
+                    b.Property<string>("Cidade")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone");
@@ -280,8 +200,6 @@ namespace TELA_ELEVADOR_SERVER.EntityFrameworkCore.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CidadeId");
 
                     b.HasIndex("Slug")
                         .IsUnique();
@@ -360,27 +278,6 @@ namespace TELA_ELEVADOR_SERVER.EntityFrameworkCore.Migrations
                     b.Navigation("Predio");
                 });
 
-            modelBuilder.Entity("TELA_ELEVADOR_SERVER.Domain.Entities.ClimaPrevisao", b =>
-                {
-                    b.HasOne("TELA_ELEVADOR_SERVER.Domain.Entities.Cidade", "Cidade")
-                        .WithMany("ClimaPrevisoesData")
-                        .HasForeignKey("CidadeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Cidade");
-                });
-
-            modelBuilder.Entity("TELA_ELEVADOR_SERVER.Domain.Entities.Predio", b =>
-                {
-                    b.HasOne("TELA_ELEVADOR_SERVER.Domain.Entities.Cidade", "Cidade")
-                        .WithMany("Predios")
-                        .HasForeignKey("CidadeId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Cidade");
-                });
-
             modelBuilder.Entity("TELA_ELEVADOR_SERVER.Domain.Entities.PreferenciaNoticia", b =>
                 {
                     b.HasOne("TELA_ELEVADOR_SERVER.Domain.Entities.FonteNoticia", "FonteNoticia")
@@ -407,13 +304,6 @@ namespace TELA_ELEVADOR_SERVER.EntityFrameworkCore.Migrations
                         .HasForeignKey("PredioId");
 
                     b.Navigation("Predio");
-                });
-
-            modelBuilder.Entity("TELA_ELEVADOR_SERVER.Domain.Entities.Cidade", b =>
-                {
-                    b.Navigation("ClimaPrevisoesData");
-
-                    b.Navigation("Predios");
                 });
 
             modelBuilder.Entity("TELA_ELEVADOR_SERVER.Domain.Entities.FonteNoticia", b =>

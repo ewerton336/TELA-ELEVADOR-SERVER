@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
+using TELA_ELEVADOR_SERVER.Infrastructure.Services;
 
 namespace TELA_ELEVADOR_SERVER.Infrastructure;
 
@@ -20,6 +21,9 @@ public static class DependencyInjection
                 options.UseNpgsql(connectionString, npgsql =>
                     npgsql.MigrationsAssembly(migrationsAssembly)));
         }
+
+        // Registrar serviços da infraestrutura
+        services.AddScoped<CidadeService>();
 
         return services;
     }

@@ -50,7 +50,7 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
 
             var fetched = await BuscarNoticiasAsync(providers, stoppingToken);
             var (novasCount, removidasCount) = await PersistirNoticiasAsync(dbContext, fetched, stoppingToken);
-            
+
             _logger.LogInformation("Ciclo concluido: {NovasCount} novas, {RemovidasCount} removidas", novasCount, removidasCount);
         }
         catch (Exception ex)
@@ -86,13 +86,13 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
         }
 
         var fetched = await BuscarNoticiasAsync(providersParaBuscar, cancellationToken);
-        
+
         // Agrupar por fonte para contar quantas novas de cada
         var porFonte = fetched.GroupBy(f => f.FonteChave)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         var resultado = new Dictionary<string, int>();
-        
+
         foreach (var provider in providersParaBuscar)
         {
             var itemsDaFonte = porFonte.GetValueOrDefault(provider.Chave, new List<(NoticiaItem Item, string FonteChave)>());
@@ -101,7 +101,7 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
         }
 
         _logger.LogInformation("Healthcheck concluido: {Total} novas no total", resultado.Values.Sum());
-        
+
         return resultado;
     }
 
