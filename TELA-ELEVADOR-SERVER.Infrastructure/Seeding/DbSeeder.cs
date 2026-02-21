@@ -80,7 +80,7 @@ public sealed class DbSeeder : IDbSeeder
         foreach (var (slug, (nome, cidadeNome)) in prediosCidades)
         {
             var predio = await _dbContext.Predios.SingleOrDefaultAsync(p => p.Slug == slug);
-            
+
             if (predio is null)
             {
                 var cidade = await _cidadeService.BuscarCidadeNormalizedAsync(cidadeNome);
@@ -88,7 +88,7 @@ public sealed class DbSeeder : IDbSeeder
                 {
                     continue; // Pular se cidade não existir
                 }
-                
+
                 predio = new Predio
                 {
                     Slug = slug,

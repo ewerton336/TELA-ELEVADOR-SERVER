@@ -36,12 +36,12 @@ public sealed class CidadeSeeder
     {
         try
         {
-            _logger.LogInformation("=== [CidadeSeeder] Iniciando verificação de cidades (Environment: {Environment}) ===", 
+            _logger.LogInformation("=== [CidadeSeeder] Iniciando verificação de cidades (Environment: {Environment}) ===",
                 _environment.EnvironmentName);
 
             // Verificar se já existe cidades populadas
             var cidadesExistentes = await _dbContext.Cidades.CountAsync();
-            
+
             _logger.LogInformation("[CidadeSeeder] Cidades existentes: {Count}", cidadesExistentes);
 
             if (cidadesExistentes > 0 && !_environment.IsDevelopment())
@@ -60,7 +60,7 @@ public sealed class CidadeSeeder
             _logger.LogInformation("[CidadeSeeder] Iniciando consumo da API IBGE para São Paulo...");
 
             var cidades = await FetchCidadesSaoPauloFromIbgeAsync();
-            
+
             if (cidades == null || cidades.Count == 0)
             {
                 _logger.LogWarning("⚠️ [CidadeSeeder] Nenhuma cidade foi retornada da API IBGE. Seed abortado.");
@@ -81,7 +81,7 @@ public sealed class CidadeSeeder
                 .ToList();
 
             _logger.LogInformation("[CidadeSeeder] Cidades para inserir após filtro: {Count}", cidadesParaInserir.Count);
-            
+
             if (cidadesParaInserir.Count == 0)
             {
                 _logger.LogInformation("✓ [CidadeSeeder] Todas as {CidadeCount} cidades já existem no banco. Seed abortado.", cidades.Count);
@@ -95,7 +95,7 @@ public sealed class CidadeSeeder
                 _logger.LogInformation("[CidadeSeeder] AddRangeAsync iniciado...");
                 await _dbContext.Cidades.AddRangeAsync(cidadesParaInserir);
                 _logger.LogInformation("[CidadeSeeder] AddRangeAsync completado. Chamando SaveChangesAsync...");
-                
+
                 var changeCount = await _dbContext.SaveChangesAsync();
                 _logger.LogInformation("[CidadeSeeder] SaveChangesAsync completado. {ChangeCount} registros salvos.", changeCount);
             }
@@ -150,13 +150,13 @@ public sealed class CidadeSeeder
             // Ler o arquivo JSON
             _logger.LogInformation("[CidadeSeeder] Lendo arquivo: {Path}", jsonPath);
             var json = await File.ReadAllTextAsync(jsonPath);
-            
-            var options = new JsonSerializerOptions 
-            { 
+
+            var options = new JsonSerializerOptions
+            {
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
-            
+
             var municipios = JsonSerializer.Deserialize<List<IbgeMunicipio>>(json, options);
 
             if (municipios == null || municipios.Count == 0)
@@ -192,7 +192,7 @@ public sealed class CidadeSeeder
                 }
 
                 nomesAdicionados.Add(nomeNormalizado);
-                
+
                 var cidade = new Cidade
                 {
                     Nome = nomeNormalizado,

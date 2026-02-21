@@ -87,7 +87,7 @@ using (var scope = app.Services.CreateScope())
 {
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    
+
     logger.LogInformation(">>> [STARTUP] Iniciando migração do banco de dados...");
     dbContext.Database.Migrate();
     logger.LogInformation(">>> [STARTUP] Migração concluída.");
@@ -95,16 +95,16 @@ using (var scope = app.Services.CreateScope())
     if (app.Environment.IsDevelopment())
     {
         logger.LogInformation(">>> [STARTUP] Ambiente: DEVELOPMENT - Iniciando CidadeSeeder...");
-        
+
         // Seed de cidades (IBGE) - executado uma única vez (ou sempre em Development após TRUNCATE)
         try
         {
             logger.LogInformation(">>> [STARTUP] Obtendo CidadeSeeder da DI container...");
             var cidadeSeeder = scope.ServiceProvider.GetRequiredService<CidadeSeeder>();
             logger.LogInformation(">>> [STARTUP] CidadeSeeder obtido. Chamando SeedCidadesSaoPauloAsync...");
-            
+
             await cidadeSeeder.SeedCidadesSaoPauloAsync();
-            
+
             logger.LogInformation(">>> [STARTUP] CidadeSeeder concluído com sucesso.");
         }
         catch (Exception ex)
@@ -120,7 +120,7 @@ using (var scope = app.Services.CreateScope())
     else
     {
         logger.LogInformation(">>> [STARTUP] Ambiente: PRODUCTION - Executando CidadeSeeder se tabela vazia...");
-        
+
         // Em Production, apenas tenta seed IBGE se tabela está vazia
         try
         {
