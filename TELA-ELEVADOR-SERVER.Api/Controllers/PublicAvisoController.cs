@@ -44,6 +44,7 @@ public sealed class PublicAvisoController : ControllerBase
                 a.InicioEm,
                 a.FimEm,
                 a.Ativo,
+                a.Prioridade,
                 a.CriadoEm
             })
             .ToListAsync();

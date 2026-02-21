@@ -11,6 +11,7 @@ public sealed class AvisoEfConfiguration : IEntityTypeConfiguration<Aviso>
         builder.ToTable("Aviso");
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).UseIdentityByDefaultColumn();
+        builder.Property(a => a.Prioridade).HasMaxLength(20).IsRequired().HasDefaultValue("normal");
         builder.HasOne(a => a.Predio)
             .WithMany(p => p.Avisos)
             .HasForeignKey(a => a.PredioId);

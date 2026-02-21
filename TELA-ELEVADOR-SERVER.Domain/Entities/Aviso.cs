@@ -8,6 +8,7 @@ public sealed class Aviso : BaseEntity
     public DateTime? InicioEm { get; set; }
     public DateTime? FimEm { get; set; }
     public bool Ativo { get; set; }
+    public string Prioridade { get; set; } = "normal";
 
     public Predio? Predio { get; set; }
 }

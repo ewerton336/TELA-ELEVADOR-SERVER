@@ -45,6 +45,7 @@ public sealed class AdminAvisoController : ControllerBase
                 a.InicioEm,
                 a.FimEm,
                 a.Ativo,
+                a.Prioridade,
                 a.CriadoEm
             })
             .ToListAsync();
@@ -74,6 +75,7 @@ public sealed class AdminAvisoController : ControllerBase
             InicioEm = request.InicioEm,
             FimEm = request.FimEm,
             Ativo = request.Ativo,
+            Prioridade = request.Prioridade ?? "normal",
             CriadoEm = DateTime.UtcNow
         };
 
@@ -88,6 +90,7 @@ public sealed class AdminAvisoController : ControllerBase
             aviso.InicioEm,
             aviso.FimEm,
             aviso.Ativo,
+            aviso.Prioridade,
             aviso.CriadoEm
         });
     }
@@ -122,6 +125,7 @@ public sealed class AdminAvisoController : ControllerBase
         aviso.InicioEm = request.InicioEm;
         aviso.FimEm = request.FimEm;
         aviso.Ativo = request.Ativo;
+        aviso.Prioridade = request.Prioridade ?? "normal";
 
         await _dbContext.SaveChangesAsync();
         return Ok(new
@@ -132,6 +136,7 @@ public sealed class AdminAvisoController : ControllerBase
             aviso.InicioEm,
             aviso.FimEm,
             aviso.Ativo,
+            aviso.Prioridade,
             aviso.CriadoEm
         });
     }
@@ -188,5 +193,6 @@ public sealed class AdminAvisoController : ControllerBase
         string Mensagem,
         DateTime? InicioEm,
         DateTime? FimEm,
-        bool Ativo);
+        bool Ativo,
+        string? Prioridade);
 }
