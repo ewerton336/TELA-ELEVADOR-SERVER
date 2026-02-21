@@ -15,7 +15,7 @@ public sealed class NoticiaService : INoticiaService
         _dbContext = dbContext;
     }
 
-    public async Task<List<NoticiaItem>> BuscarNoticiasAsync(IEnumerable<string> chaves, int take = 30)
+    public async Task<List<NoticiaItem>> BuscarNoticiasAsync(IEnumerable<string> chaves,int take = 30)
     {
         var enabled = chaves
             .Where(chave => !string.IsNullOrWhiteSpace(chave))
@@ -28,15 +28,30 @@ public sealed class NoticiaService : INoticiaService
         }
 
         var normalizedTake = Math.Clamp(take, 1, MaxTake);
+        
+        // Buscar mais notícias para ter buffer suficiente de cada fonte
+        var bufferMultiplier = Math.Max(3, enabled.Count);
+        var fetchCount = normalizedTake * bufferMultiplier;
 
         var noticias = await _dbContext.Noticias
             .AsNoTracking()
             .Where(n => enabled.Contains(n.FonteChave))
             .OrderByDescending(n => n.PublicadoEmUtc)
-            .Take(normalizedTake)
+            .Take(fetchCount)
             .ToListAsync();
 
-        return noticias.Select(n => new NoticiaItem(
+        // Agrupar por fonte mantendo ordem por data dentro de cada grupo
+        var porFonte = noticias
+            .GroupBy(n => n.FonteChave)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(n => n.PublicadoEmUtc).ToList()
+            );
+
+        // Aplicar interleaving (round-robin entre fontes)
+        var noticiasIntercaladas = InterleaveBySource(porFonte, normalizedTake);
+
+        return noticiasIntercaladas.Select(n => new NoticiaItem(
                 n.Link,
                 n.Titulo,
                 TrimToNextPunctuation(n.Descricao, 200),
@@ -47,6 +62,52 @@ public sealed class NoticiaService : INoticiaService
                 n.FonteNome,
                 n.Categoria))
             .ToList();
+    }
+
+    private static List<Domain.Entities.Noticia> InterleaveBySource(
+        Dictionary<string, List<Domain.Entities.Noticia>> porFonte,
+        int take)
+    {
+        if (porFonte.Count == 0)
+        {
+            return new List<Domain.Entities.Noticia>();
+        }
+
+        var resultado = new List<Domain.Entities.Noticia>();
+        var fontes = porFonte.Keys.ToList();
+        var indices = fontes.ToDictionary(f => f, _ => 0);
+
+        // Round-robin: pegar 1 notícia de cada fonte alternadamente
+        while (resultado.Count < take)
+        {
+            var adicionouNessaRodada = false;
+
+            foreach (var fonte in fontes)
+            {
+                if (resultado.Count >= take)
+                {
+                    break;
+                }
+
+                var lista = porFonte[fonte];
+                var indice = indices[fonte];
+
+                if (indice < lista.Count)
+                {
+                    resultado.Add(lista[indice]);
+                    indices[fonte]++;
+                    adicionouNessaRodada = true;
+                }
+            }
+
+            // Se nenhuma fonte tinha mais itens, encerrar
+            if (!adicionouNessaRodada)
+            {
+                break;
+            }
+        }
+
+        return resultado;
     }
 
     private static string TrimToNextPunctuation(string text, int minLength)

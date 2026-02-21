@@ -44,11 +44,14 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
 
             if (providers.Count == 0)
             {
+                _logger.LogWarning("Nenhum provider de noticias registrado.");
                 return;
             }
 
             var fetched = await BuscarNoticiasAsync(providers, stoppingToken);
-            await PersistirNoticiasAsync(dbContext, fetched, stoppingToken);
+            var (novasCount, removidasCount) = await PersistirNoticiasAsync(dbContext, fetched, stoppingToken);
+            
+            _logger.LogInformation("Ciclo concluido: {NovasCount} novas, {RemovidasCount} removidas", novasCount, removidasCount);
         }
         catch (Exception ex)
         {
@@ -56,7 +59,53 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
         }
     }
 
-    private static async Task<List<(NoticiaItem Item, string FonteChave)>> BuscarNoticiasAsync(
+    /// <summary>
+    /// Busca notícias de providers específicos ou de todos se não especificado.
+    /// Retorna um dicionário com a chave da fonte e a quantidade de notícias novas persistidas.
+    /// </summary>
+    public async Task<Dictionary<string, int>> BuscarNoticiasDeProvidersAsync(List<string>? chavesProviders = null, CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var todosProviders = scope.ServiceProvider.GetServices<INoticiaProvider>().ToList();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        if (todosProviders.Count == 0)
+        {
+            _logger.LogWarning("Nenhum provider de noticias registrado.");
+            return new Dictionary<string, int>();
+        }
+
+        var providersParaBuscar = chavesProviders == null || chavesProviders.Count == 0
+            ? todosProviders
+            : todosProviders.Where(p => chavesProviders.Contains(p.Chave, StringComparer.OrdinalIgnoreCase)).ToList();
+
+        if (providersParaBuscar.Count == 0)
+        {
+            _logger.LogWarning("Nenhum provider encontrado para as chaves especificadas.");
+            return new Dictionary<string, int>();
+        }
+
+        var fetched = await BuscarNoticiasAsync(providersParaBuscar, cancellationToken);
+        
+        // Agrupar por fonte para contar quantas novas de cada
+        var porFonte = fetched.GroupBy(f => f.FonteChave)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var resultado = new Dictionary<string, int>();
+        
+        foreach (var provider in providersParaBuscar)
+        {
+            var itemsDaFonte = porFonte.GetValueOrDefault(provider.Chave, new List<(NoticiaItem Item, string FonteChave)>());
+            var (novasCount, _) = await PersistirNoticiasAsync(dbContext, itemsDaFonte, cancellationToken);
+            resultado[provider.Chave] = novasCount;
+        }
+
+        _logger.LogInformation("Healthcheck concluido: {Total} novas no total", resultado.Values.Sum());
+        
+        return resultado;
+    }
+
+    private async Task<List<(NoticiaItem Item, string FonteChave)>> BuscarNoticiasAsync(
         IEnumerable<INoticiaProvider> providers,
         CancellationToken stoppingToken)
     {
@@ -65,10 +114,12 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
             try
             {
                 var items = await provider.BuscarUltimasAsync();
+                _logger.LogInformation("Provider {Provider} retornou {Count} noticias", provider.Chave, items.Count);
                 return items.Select(item => (Item: item, FonteChave: provider.Chave)).ToList();
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "Falha ao buscar noticias do provider {Provider}: {Message}", provider.Chave, ex.Message);
                 return new List<(NoticiaItem Item, string FonteChave)>();
             }
         });
@@ -79,7 +130,7 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
             .ToList();
     }
 
-    private static async Task PersistirNoticiasAsync(
+    private async Task<(int NovasCount, int RemovidasCount)> PersistirNoticiasAsync(
         AppDbContext dbContext,
         List<(NoticiaItem Item, string FonteChave)> fetched,
         CancellationToken stoppingToken)
@@ -125,6 +176,8 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
         {
             await dbContext.SaveChangesAsync(stoppingToken);
         }
+
+        return (novas.Count, antigas.Count);
     }
 
     private static Noticia MapToEntity(NoticiaItem item, string fonteChave, DateTime agoraUtc)

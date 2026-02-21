@@ -28,7 +28,8 @@ builder.Services.AddScoped<INoticiaProvider, G1NoticiaProvider>();
 builder.Services.AddScoped<INoticiaProvider, SantaPortalNoticiaProvider>();
 builder.Services.AddScoped<INoticiaProvider, DiarioLitoralNoticiaProvider>();
 builder.Services.AddScoped<INoticiaService, NoticiaService>();
-builder.Services.AddHostedService<NoticiaBackgroundWorker>();
+builder.Services.AddSingleton<NoticiaBackgroundWorker>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<NoticiaBackgroundWorker>());
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IDbSeeder, DbSeeder>();
