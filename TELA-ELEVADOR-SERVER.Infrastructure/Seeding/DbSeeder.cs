@@ -34,7 +34,7 @@ public sealed class DbSeeder : IDbSeeder
             {
                 Chave = "G1",
                 Nome = "G1",
-                UrlBase = "https://g1.globo.com",
+                UrlBase = "https://g1.globo.com/rss/g1/sp/santos-regiao/",
                 Ativo = true,
                 CriadoEm = DateTime.UtcNow
             },
@@ -42,7 +42,7 @@ public sealed class DbSeeder : IDbSeeder
             {
                 Chave = "SantaPortal",
                 Nome = "SantaPortal",
-                UrlBase = "https://santaportal.com.br",
+                UrlBase = "https://santaportal.com.br/feed/",
                 Ativo = true,
                 CriadoEm = DateTime.UtcNow
             },
@@ -50,7 +50,7 @@ public sealed class DbSeeder : IDbSeeder
             {
                 Chave = "DiarioDoLitoral",
                 Nome = "Diario do Litoral",
-                UrlBase = "https://www.diariodolitoral.com.br",
+                UrlBase = "https://www.diariodolitoral.com.br/praia-grande/rss/",
                 Ativo = true,
                 CriadoEm = DateTime.UtcNow
             }

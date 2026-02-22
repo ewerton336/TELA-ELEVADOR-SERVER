@@ -64,16 +64,25 @@ public sealed class NoticiasWorker : BackgroundService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Erro ao buscar notícias da fonte {FonteNome} - {ErrorMessage}", fonte.Nome, ex.Message);
+                    _logger.LogError(ex, "Erro ao buscar notícias da fonte {FonteNome} - {ErrorMessage}. Tentaremos novamente no próximo intervalo.", fonte.Nome, ex.Message);
+                    // Continua processando as próximas fontes mesmo com erro
                 }
             }
 
-            await dbContext.SaveChangesAsync(stoppingToken);
-            _logger.LogInformation("Notícias atualizadas com sucesso");
+            try
+            {
+                await dbContext.SaveChangesAsync(stoppingToken);
+                _logger.LogInformation("Notícias atualizadas com sucesso");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao salvar notícias no banco de dados");
+                // Não relança a exceção para permitir que o worker continue rodando
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao buscar notícias");
+            _logger.LogError(ex, "Erro geral ao buscar notícias. Tentaremos novamente no próximo intervalo.");
         }
     }
 
@@ -85,21 +94,27 @@ public sealed class NoticiasWorker : BackgroundService
             return;
         }
 
-        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+
+        _logger.LogInformation("Buscando RSS da fonte {FonteNome} em {Url}", fonte.Nome, fonte.UrlBase);
 
         try
         {
             var content = await client.GetStringAsync(fonte.UrlBase, stoppingToken);
+            _logger.LogDebug("RSS obtido com sucesso de {FonteNome}. Tamanho: {Size} bytes", fonte.Nome, content.Length);
 
             // Parse simplificado de RSS/Atom
             var noticias = ParseRssContent(content, fonte);
+            _logger.LogInformation("Fonte {FonteNome}: {Total} notícias encontradas no RSS", fonte.Nome, noticias.Count);
 
             // Verificar duplicatas e adicionar novas
             var contagemAdicionadas = 0;
             foreach (var noticia in noticias)
             {
+                // Verificar se já existe por Link (que é único no banco)
                 var jaExiste = await dbContext.Noticias
-                    .AnyAsync(n => n.FonteChave == fonte.Chave && n.Titulo == noticia.Titulo, stoppingToken);
+                    .AnyAsync(n => n.Link == noticia.Link && !string.IsNullOrEmpty(n.Link), stoppingToken);
 
                 if (!jaExiste)
                 {
@@ -124,7 +139,11 @@ public sealed class NoticiasWorker : BackgroundService
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Erro HTTP ao buscar notícias da fonte {FonteNome}", fonte.Nome);
+            _logger.LogWarning(ex, "Fonte {FonteNome} indisponível ({Url}): {Message}. Será reconectada no próximo intervalo.", fonte.Nome, fonte.UrlBase, ex.Message);
+        }
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogWarning(ex, "Timeout ao buscar notícias da fonte {FonteNome} ({Url}). Será tentada novamente no próximo intervalo.", fonte.Nome, fonte.UrlBase);
         }
     }
 
@@ -140,6 +159,12 @@ public sealed class NoticiasWorker : BackgroundService
 
             var nodes = xmlDoc.SelectNodes("//item");
 
+            if (nodes == null || nodes.Count == 0)
+            {
+                _logger.LogWarning("Nenhum item RSS encontrado para fonte {FonteNome}. Tamanho do conteúdo: {Size} bytes", fonte.Nome, content.Length);
+                return noticias;
+            }
+
             foreach (System.Xml.XmlNode node in nodes)
             {
                 try
@@ -148,7 +173,10 @@ public sealed class NoticiasWorker : BackgroundService
                     var descricao = node.SelectSingleNode("description")?.InnerText?.Trim() ?? "";
                     var link = node.SelectSingleNode("link")?.InnerText?.Trim() ?? "";
                     var pubDate = node.SelectSingleNode("pubDate")?.InnerText?.Trim() ?? DateTime.UtcNow.ToString("o");
+
+                    // Buscar imagem em múltiplos formatos (RSS padrão, media:content do G1, enclosure)
                     var imagem = node.SelectSingleNode("image/url")?.InnerText?.Trim() ??
+                                 node.SelectSingleNode("*[local-name()='content']")?.Attributes?["url"]?.Value ??
                                  node.SelectSingleNode("enclosure")?.Attributes?["url"]?.Value ?? "";
 
                     if (string.IsNullOrWhiteSpace(titulo))
@@ -162,6 +190,11 @@ public sealed class NoticiasWorker : BackgroundService
                         try
                         {
                             publicadoEm = DateTime.ParseExact(pubDate, "R", System.Globalization.CultureInfo.InvariantCulture);
+                            // Garantir que seja UTC
+                            if (publicadoEm.Kind != DateTimeKind.Utc)
+                            {
+                                publicadoEm = DateTime.SpecifyKind(publicadoEm, DateTimeKind.Utc);
+                            }
                         }
                         catch
                         {
@@ -170,7 +203,10 @@ public sealed class NoticiasWorker : BackgroundService
                     }
                     else
                     {
-                        publicadoEm = dateParsed;
+                        // Garantir que seja UTC
+                        publicadoEm = dateParsed.Kind == DateTimeKind.Utc
+                            ? dateParsed
+                            : DateTime.SpecifyKind(dateParsed, DateTimeKind.Utc);
                     }
 
                     var noticia = new Noticia

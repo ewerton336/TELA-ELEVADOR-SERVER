@@ -33,7 +33,6 @@ builder.Services.AddScoped<INoticiaService, NoticiaService>();
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IDbSeeder, DbSeeder>();
-builder.Services.AddScoped<CidadeSeeder>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection.GetValue<string>("Key") ?? string.Empty;
@@ -94,43 +93,10 @@ using (var scope = app.Services.CreateScope())
 
     if (app.Environment.IsDevelopment())
     {
-        logger.LogInformation(">>> [STARTUP] Ambiente: DEVELOPMENT - Iniciando CidadeSeeder...");
-
-        // Seed de cidades (IBGE) - executado uma única vez (ou sempre em Development após TRUNCATE)
-        try
-        {
-            logger.LogInformation(">>> [STARTUP] Obtendo CidadeSeeder da DI container...");
-            var cidadeSeeder = scope.ServiceProvider.GetRequiredService<CidadeSeeder>();
-            logger.LogInformation(">>> [STARTUP] CidadeSeeder obtido. Chamando SeedCidadesSaoPauloAsync...");
-
-            await cidadeSeeder.SeedCidadesSaoPauloAsync();
-
-            logger.LogInformation(">>> [STARTUP] CidadeSeeder concluído com sucesso.");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, ">>> [STARTUP] Erro ao fazer seed de cidades IBGE: {Message}", ex.Message);
-        }
-
-        logger.LogInformation(">>> [STARTUP] Iniciando DbSeeder (dados de teste)...");
+        logger.LogInformation(">>> [STARTUP] Ambiente: DEVELOPMENT - Iniciando DbSeeder (dados de teste)...");
         var seeder = scope.ServiceProvider.GetRequiredService<IDbSeeder>();
         await seeder.SeedAsync();
         logger.LogInformation(">>> [STARTUP] DbSeeder concluído.");
-    }
-    else
-    {
-        logger.LogInformation(">>> [STARTUP] Ambiente: PRODUCTION - Executando CidadeSeeder se tabela vazia...");
-
-        // Em Production, apenas tenta seed IBGE se tabela está vazia
-        try
-        {
-            var cidadeSeeder = scope.ServiceProvider.GetRequiredService<CidadeSeeder>();
-            await cidadeSeeder.SeedCidadesSaoPauloAsync();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, ">>> [STARTUP] Erro ao fazer seed de cidades IBGE em Production");
-        }
     }
 }
 
