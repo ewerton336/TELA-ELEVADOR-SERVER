@@ -1,5 +1,3 @@
-using System;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +29,7 @@ public sealed class AdminPredioController : ControllerBase
             return NotFound(new { message = "Predio nao encontrado." });
         }
 
-        if (!IsDeveloper())
+        if (!HasAccessToPredio(predio.Id))
         {
             return Forbid();
         }
@@ -52,7 +50,7 @@ public sealed class AdminPredioController : ControllerBase
             return NotFound(new { message = "Predio nao encontrado." });
         }
 
-        if (!IsDeveloper())
+        if (!HasAccessToPredio(predio.Id))
         {
             return Forbid();
         }
@@ -69,13 +67,16 @@ public sealed class AdminPredioController : ControllerBase
         return Ok(new { predio.OrientationMode });
     }
 
-    private bool IsDeveloper()
+    private bool HasAccessToPredio(int predioId)
     {
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
-        Console.WriteLine($"[AdminPredioController] Role claim (ClaimTypes.Role): '{role}'");
-        var isDev = string.Equals(role, "Developer", StringComparison.OrdinalIgnoreCase);
-        Console.WriteLine($"[AdminPredioController] IsDeveloper result: {isDev}");
-        return isDev;
+        var role = User.FindFirst("role")?.Value;
+        if (string.Equals(role, "Developer", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var claim = User.FindFirst("predioId")?.Value;
+        return int.TryParse(claim, out var claimPredioId) && claimPredioId == predioId;
     }
 
     public sealed record OrientationRequest(string OrientationMode);
