@@ -74,7 +74,7 @@ public sealed class AdminNoticiaInternaController : ControllerBase
     [RequestSizeLimit(30 * 1024 * 1024)]
     public async Task<IActionResult> Create(
         [FromRoute] string slug,
-        [FromForm] string titulo,
+        [FromForm] string? titulo,
         [FromForm] string? subtitulo,
         [FromForm] DateTime? inicioEm,
         [FromForm] DateTime? fimEm,
@@ -151,7 +151,7 @@ public sealed class AdminNoticiaInternaController : ControllerBase
     public async Task<IActionResult> Update(
         [FromRoute] string slug,
         [FromRoute] int id,
-        [FromForm] string titulo,
+        [FromForm] string? titulo,
         [FromForm] string? subtitulo,
         [FromForm] DateTime? inicioEm,
         [FromForm] DateTime? fimEm,

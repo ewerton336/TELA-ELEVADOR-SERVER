@@ -3,7 +3,7 @@ namespace TELA_ELEVADOR_SERVER.Domain.Entities;
 public sealed class NoticiaInterna : BaseEntity
 {
     public int PredioId { get; set; }
-    public string Titulo { get; set; } = string.Empty;
+    public string? Titulo { get; set; }
     public string? Subtitulo { get; set; }
     public string TipoMidia { get; set; } = "imagem"; // "imagem" | "video"
     public string NomeArquivo { get; set; } = string.Empty;

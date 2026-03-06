@@ -11,7 +11,7 @@ public sealed class NoticiaInternaEfConfiguration : IEntityTypeConfiguration<Not
         builder.ToTable("NoticiaInterna");
         builder.HasKey(n => n.Id);
         builder.Property(n => n.Id).UseIdentityByDefaultColumn();
-        builder.Property(n => n.Titulo).HasMaxLength(300).IsRequired();
+        builder.Property(n => n.Titulo).HasMaxLength(300);
         builder.Property(n => n.Subtitulo).HasMaxLength(500);
         builder.Property(n => n.TipoMidia).HasMaxLength(20).IsRequired();
         builder.Property(n => n.NomeArquivo).HasMaxLength(260).IsRequired();
