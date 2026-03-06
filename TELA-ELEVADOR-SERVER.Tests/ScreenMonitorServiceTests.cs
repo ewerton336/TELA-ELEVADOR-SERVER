@@ -157,4 +157,44 @@ public class ScreenMonitorServiceTests
         screen.ConnectedAt.Should().BeOnOrAfter(before);
         screen.ConnectedAt.Should().BeOnOrBefore(after);
     }
+
+    [Fact]
+    public void Register_WithAppVersion_ShouldStoreVersion()
+    {
+        _sut.Register("conn-1", "gramado", null, "2026-03-06T10:00:00.000Z");
+
+        var screen = _sut.GetAll()[0];
+        screen.AppVersion.Should().Be("2026-03-06T10:00:00.000Z");
+    }
+
+    [Fact]
+    public void Register_WithNullAppVersion_ShouldStoreNull()
+    {
+        _sut.Register("conn-1", "gramado", null);
+
+        var screen = _sut.GetAll()[0];
+        screen.AppVersion.Should().BeNull();
+    }
+
+    [Fact]
+    public void UpdateHeartbeat_WithAppVersion_ShouldUpdateVersion()
+    {
+        _sut.Register("conn-1", "gramado", null, "2026-03-06T10:00:00.000Z");
+
+        _sut.UpdateHeartbeat("conn-1", 60, true, "2026-03-06T12:00:00.000Z");
+
+        var screen = _sut.GetAll()[0];
+        screen.AppVersion.Should().Be("2026-03-06T12:00:00.000Z");
+    }
+
+    [Fact]
+    public void UpdateHeartbeat_WithNullAppVersion_ShouldKeepExisting()
+    {
+        _sut.Register("conn-1", "gramado", null, "2026-03-06T10:00:00.000Z");
+
+        _sut.UpdateHeartbeat("conn-1", 60, true);
+
+        var screen = _sut.GetAll()[0];
+        screen.AppVersion.Should().Be("2026-03-06T10:00:00.000Z");
+    }
 }

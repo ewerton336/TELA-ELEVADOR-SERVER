@@ -3,7 +3,7 @@ using TELA_ELEVADOR_SERVER.Api.Services;
 
 namespace TELA_ELEVADOR_SERVER.Api.Hubs;
 
-public sealed record ScreenHeartbeat(string Slug, double Uptime, bool IsVisible);
+public sealed record ScreenHeartbeat(string Slug, double Uptime, bool IsVisible, string? AppVersion = null);
 
 public sealed class PredioHub : Hub
 {
@@ -17,19 +17,20 @@ public sealed class PredioHub : Hub
     /// <summary>
     /// Tela do elevador chama ao conectar, informando qual prédio exibe.
     /// </summary>
-    public async Task JoinPredio(string slug)
+    public async Task JoinPredio(string slug, string? appVersion = null)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, slug);
 
         var userAgent = Context.GetHttpContext()?.Request.Headers["User-Agent"].ToString();
-        _monitor.Register(Context.ConnectionId, slug, userAgent);
+        _monitor.Register(Context.ConnectionId, slug, userAgent, appVersion);
 
         await Clients.Group("monitor")
             .SendAsync("ScreenConnected", new
             {
                 Context.ConnectionId,
                 Slug = slug,
-                ConnectedAt = DateTime.UtcNow
+                ConnectedAt = DateTime.UtcNow,
+                AppVersion = appVersion
             });
     }
 
@@ -38,7 +39,7 @@ public sealed class PredioHub : Hub
     /// </summary>
     public async Task Heartbeat(ScreenHeartbeat data)
     {
-        _monitor.UpdateHeartbeat(Context.ConnectionId, data.Uptime, data.IsVisible);
+        _monitor.UpdateHeartbeat(Context.ConnectionId, data.Uptime, data.IsVisible, data.AppVersion);
 
         await Clients.Group("monitor")
             .SendAsync("ScreenHeartbeat", new
@@ -47,6 +48,7 @@ public sealed class PredioHub : Hub
                 data.Slug,
                 data.Uptime,
                 data.IsVisible,
+                data.AppVersion,
                 ReceivedAt = DateTime.UtcNow
             });
     }

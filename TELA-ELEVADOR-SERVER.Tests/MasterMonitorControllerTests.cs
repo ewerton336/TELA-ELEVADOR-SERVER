@@ -1,6 +1,9 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Moq;
 using TELA_ELEVADOR_SERVER.Api.Controllers;
+using TELA_ELEVADOR_SERVER.Api.Hubs;
 using TELA_ELEVADOR_SERVER.Api.Services;
 
 namespace TELA_ELEVADOR_SERVER.Tests;
@@ -8,11 +11,16 @@ namespace TELA_ELEVADOR_SERVER.Tests;
 public class MasterMonitorControllerTests
 {
     private readonly ScreenMonitorService _monitor = new();
+    private readonly Mock<IHubContext<PredioHub>> _hubContext = new();
+    private readonly Mock<IHubClients> _hubClients = new();
+    private readonly Mock<ISingleClientProxy> _clientProxy = new();
     private readonly MasterMonitorController _controller;
 
     public MasterMonitorControllerTests()
     {
-        _controller = new MasterMonitorController(_monitor);
+        _hubClients.Setup(c => c.Client(It.IsAny<string>())).Returns(_clientProxy.Object);
+        _hubContext.Setup(h => h.Clients).Returns(_hubClients.Object);
+        _controller = new MasterMonitorController(_monitor, _hubContext.Object);
     }
 
     [Fact]
@@ -65,5 +73,39 @@ public class MasterMonitorControllerTests
         var screens = okResult.Value.Should().BeAssignableTo<IReadOnlyList<ScreenInfo>>().Subject;
         screens.Should().HaveCount(1);
         screens[0].Slug.Should().Be("canela");
+    }
+
+    [Fact]
+    public async Task ForceRefresh_ValidConnectionId_ShouldSendToClient()
+    {
+        var request = new ForceRefreshRequest("conn-123");
+
+        var result = await _controller.ForceRefresh(request);
+
+        result.Should().BeOfType<OkObjectResult>();
+        _hubClients.Verify(c => c.Client("conn-123"), Times.Once);
+        _clientProxy.Verify(p =>
+            p.SendCoreAsync("ForceRefresh", It.Is<object?[]>(a => a.Length == 0), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ForceRefresh_EmptyConnectionId_ShouldReturnBadRequest()
+    {
+        var request = new ForceRefreshRequest("");
+
+        var result = await _controller.ForceRefresh(request);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task ForceRefresh_WhitespaceConnectionId_ShouldReturnBadRequest()
+    {
+        var request = new ForceRefreshRequest("   ");
+
+        var result = await _controller.ForceRefresh(request);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 }

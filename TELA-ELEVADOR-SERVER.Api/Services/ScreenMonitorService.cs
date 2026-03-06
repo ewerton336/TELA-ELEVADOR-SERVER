@@ -6,7 +6,7 @@ public sealed class ScreenMonitorService
 {
     private readonly ConcurrentDictionary<string, ScreenInfo> _screens = new();
 
-    public void Register(string connectionId, string slug, string? userAgent)
+    public void Register(string connectionId, string slug, string? userAgent, string? appVersion = null)
     {
         _screens[connectionId] = new ScreenInfo
         {
@@ -14,17 +14,20 @@ public sealed class ScreenMonitorService
             Slug = slug,
             ConnectedAt = DateTime.UtcNow,
             LastHeartbeat = DateTime.UtcNow,
-            UserAgent = userAgent
+            UserAgent = userAgent,
+            AppVersion = appVersion
         };
     }
 
-    public void UpdateHeartbeat(string connectionId, double uptime, bool isVisible)
+    public void UpdateHeartbeat(string connectionId, double uptime, bool isVisible, string? appVersion = null)
     {
         if (_screens.TryGetValue(connectionId, out var info))
         {
             info.LastHeartbeat = DateTime.UtcNow;
             info.Uptime = uptime;
             info.IsVisible = isVisible;
+            if (appVersion is not null)
+                info.AppVersion = appVersion;
         }
     }
 
@@ -58,4 +61,5 @@ public sealed class ScreenInfo
     public double Uptime { get; set; }
     public bool IsVisible { get; set; }
     public string? UserAgent { get; set; }
+    public string? AppVersion { get; set; }
 }

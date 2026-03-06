@@ -119,4 +119,51 @@ public class PredioHubTests
 
         _monitor.GetAll().Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task JoinPredio_WithAppVersion_ShouldRegisterWithVersion()
+    {
+        await _hub.JoinPredio("gramado", "2026-03-06T10:00:00.000Z");
+
+        var screens = _monitor.GetAll();
+        screens.Should().HaveCount(1);
+        screens[0].AppVersion.Should().Be("2026-03-06T10:00:00.000Z");
+    }
+
+    [Fact]
+    public async Task JoinPredio_WithoutAppVersion_ShouldStillWork()
+    {
+        await _hub.JoinPredio("gramado");
+
+        var screens = _monitor.GetAll();
+        screens.Should().HaveCount(1);
+        screens[0].AppVersion.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Heartbeat_WithAppVersion_ShouldUpdateVersion()
+    {
+        await _hub.JoinPredio("gramado", "2026-03-06T10:00:00.000Z");
+
+        var heartbeat = new ScreenHeartbeat("gramado", 60, true, "2026-03-06T12:00:00.000Z");
+        await _hub.Heartbeat(heartbeat);
+
+        var screen = _monitor.GetAll()[0];
+        screen.AppVersion.Should().Be("2026-03-06T12:00:00.000Z");
+    }
+
+    [Fact]
+    public async Task Heartbeat_WithAppVersion_ShouldForwardToMonitor()
+    {
+        await _hub.JoinPredio("gramado", "2026-03-06T10:00:00.000Z");
+
+        var heartbeat = new ScreenHeartbeat("gramado", 45.5, true, "2026-03-06T10:00:00.000Z");
+        await _hub.Heartbeat(heartbeat);
+
+        // Should have notified "monitor" group (once for JoinPredio, once for Heartbeat)
+        _clients.Verify(c => c.Group("monitor"), Times.Exactly(2));
+        _groupProxy.Verify(p =>
+            p.SendCoreAsync("ScreenHeartbeat", It.IsAny<object?[]>(), default),
+            Times.Once);
+    }
 }
