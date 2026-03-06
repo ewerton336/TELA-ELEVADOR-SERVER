@@ -16,6 +16,11 @@ using TELA_ELEVADOR_SERVER.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 30 * 1024 * 1024; // 30 MB for file uploads
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -75,6 +80,10 @@ builder.Services.AddSingleton<ScreenMonitorService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
+
+// Ensure media directory exists
+var mediaBasePath = builder.Configuration.GetValue<string>("MediaStorage:BasePath") ?? "media";
+Directory.CreateDirectory(mediaBasePath);
 
 var app = builder.Build();
 

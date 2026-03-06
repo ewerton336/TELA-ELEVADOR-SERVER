@@ -16,6 +16,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<FonteNoticia> FontesNoticia => Set<FonteNoticia>();
     public DbSet<PreferenciaNoticia> PreferenciasNoticia => Set<PreferenciaNoticia>();
     public DbSet<Noticia> Noticias => Set<Noticia>();
+    public DbSet<NoticiaInterna> NoticiasInternas => Set<NoticiaInterna>();
     public DbSet<Cidade> Cidades => Set<Cidade>();
     public DbSet<ClimaPrevisao> ClimaPrevisoesData => Set<ClimaPrevisao>();
 
