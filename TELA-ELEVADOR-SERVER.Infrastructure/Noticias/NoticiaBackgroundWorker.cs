@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,6 +13,7 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
 {
     private static readonly TimeSpan Intervalo = TimeSpan.FromHours(1);
     private static readonly TimeSpan Retencao = TimeSpan.FromDays(7);
+    private const int IdadeMaximaDias = 5;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<NoticiaBackgroundWorker> _logger;
 
@@ -153,9 +155,12 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
                     .ToListAsync(stoppingToken),
                 StringComparer.OrdinalIgnoreCase);
 
+        var limiteIdadeUtc = agoraUtc.Date.AddDays(-IdadeMaximaDias);
+
         var novas = fetched
             .Where(item => !existentes.Contains(item.Item.Link))
             .Select(item => MapToEntity(item.Item, item.FonteChave, agoraUtc))
+            .Where(n => n.PublicadoEmUtc >= limiteIdadeUtc)
             .ToList();
 
         if (novas.Count > 0)
@@ -199,6 +204,19 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
         };
     }
 
+    private static readonly string[] DateFormats =
+    {
+        "ddd, dd MMM yyyy HH:mm:ss zzz",
+        "ddd, dd MMM yyyy HH:mm:ss 'GMT'",
+        "ddd, dd MMM yyyy HH:mm:ss",
+        "yyyy-MM-ddTHH:mm:sszzz",
+        "yyyy-MM-ddTHH:mm:ss.fffffffzzz",
+        "yyyy-MM-ddTHH:mm:ssZ",
+        "yyyy-MM-dd HH:mm:ss",
+        "dd/MM/yyyy HH:mm:ss",
+        "dd/MM/yyyy",
+    };
+
     private static DateTime ParsePublishedUtc(string? value, DateTime fallbackUtc)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -206,8 +224,19 @@ public sealed class NoticiaBackgroundWorker : BackgroundService
             return fallbackUtc;
         }
 
-        return DateTime.TryParse(value, out var parsed)
-            ? parsed.ToUniversalTime()
-            : fallbackUtc;
+        // Tentar parse genérico primeiro
+        if (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var dto))
+        {
+            return dto.UtcDateTime;
+        }
+
+        // Tentar formatos comuns de RSS (RFC 822/1123, ISO 8601)
+        if (DateTimeOffset.TryParseExact(value, DateFormats, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out dto))
+        {
+            return dto.UtcDateTime;
+        }
+
+        // Se nenhum formato funcionar, usar fallback
+        return fallbackUtc;
     }
 }

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using TELA_ELEVADOR_SERVER.Api.Hubs;
 using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
 
 namespace TELA_ELEVADOR_SERVER.Api.Controllers;
@@ -11,10 +13,12 @@ namespace TELA_ELEVADOR_SERVER.Api.Controllers;
 public sealed class AdminPredioController : ControllerBase
 {
     private readonly AppDbContext _dbContext;
+    private readonly IHubContext<PredioHub> _hub;
 
-    public AdminPredioController(AppDbContext dbContext)
+    public AdminPredioController(AppDbContext dbContext, IHubContext<PredioHub> hub)
     {
         _dbContext = dbContext;
+        _hub = hub;
     }
 
     [HttpGet]
@@ -63,6 +67,8 @@ public sealed class AdminPredioController : ControllerBase
 
         predio.OrientationMode = mode;
         await _dbContext.SaveChangesAsync();
+
+        await _hub.Clients.Group(slug).SendAsync("ReceiveOrientation", mode);
 
         return Ok(new { predio.OrientationMode });
     }

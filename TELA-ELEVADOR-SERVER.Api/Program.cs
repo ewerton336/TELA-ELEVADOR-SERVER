@@ -11,13 +11,18 @@ using TELA_ELEVADOR_SERVER.Infrastructure.Noticias;
 using TELA_ELEVADOR_SERVER.Infrastructure.Seeding;
 using TELA_ELEVADOR_SERVER.Infrastructure.Security;
 using TELA_ELEVADOR_SERVER.Infrastructure.Services;
+using TELA_ELEVADOR_SERVER.Api.Hubs;
+using TELA_ELEVADOR_SERVER.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials()
+              .SetIsOriginAllowed(_ => true));
 });
 
 builder.Services.AddHealthChecks();
@@ -64,6 +69,9 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddSingleton<IAuthorizationHandler, PredioMatchesSlugHandler>();
 
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<ScreenMonitorService>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
@@ -81,6 +89,7 @@ app.UseSwaggerUI();
 app.MapHealthChecks("/health");
 app.MapGet("/", () => Results.Redirect("/swagger"));
 app.MapControllers();
+app.MapHub<PredioHub>("/hub/predio");
 
 using (var scope = app.Services.CreateScope())
 {

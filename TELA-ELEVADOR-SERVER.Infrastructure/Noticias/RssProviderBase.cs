@@ -9,6 +9,7 @@ namespace TELA_ELEVADOR_SERVER.Infrastructure.Noticias;
 public abstract class RssProviderBase
 {
     private static readonly Regex HtmlRegex = new("<[^>]+>", RegexOptions.Compiled);
+    private static readonly Regex TruncatedTagRegex = new(@"<[^>]*$", RegexOptions.Compiled);
     private static readonly Regex ImgRegex = new(@"<img[^>]+src=[""']([^""']+)[""']", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex SizeRegex = new(@"-\d{2,4}x\d{2,4}(?=\.[a-zA-Z0-9]+$)", RegexOptions.Compiled);
 
@@ -97,7 +98,13 @@ public abstract class RssProviderBase
 
     protected static string CleanHtml(string html)
     {
-        return HtmlRegex.Replace(WebUtility.HtmlDecode(html ?? string.Empty), " ")
+        var decoded = WebUtility.HtmlDecode(html ?? string.Empty);
+        var cleaned = HtmlRegex.Replace(decoded, " ");
+        // Segunda passada para apanhar entidades que só aparecem após o primeiro decode
+        cleaned = HtmlRegex.Replace(WebUtility.HtmlDecode(cleaned), " ");
+        // Remover tags truncadas (sem '>' de fechamento, ex.: "<img src=..." cortado)
+        cleaned = TruncatedTagRegex.Replace(cleaned, string.Empty);
+        return cleaned
             .Replace("\u00A0", " ")
             .Replace("\n", " ")
             .Replace("\r", " ")

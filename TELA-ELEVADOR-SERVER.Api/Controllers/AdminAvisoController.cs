@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using TELA_ELEVADOR_SERVER.Api.Hubs;
 using TELA_ELEVADOR_SERVER.Domain.Entities;
 using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
 
@@ -13,10 +15,12 @@ namespace TELA_ELEVADOR_SERVER.Api.Controllers;
 public sealed class AdminAvisoController : ControllerBase
 {
     private readonly AppDbContext _dbContext;
+    private readonly IHubContext<PredioHub> _hub;
 
-    public AdminAvisoController(AppDbContext dbContext)
+    public AdminAvisoController(AppDbContext dbContext, IHubContext<PredioHub> hub)
     {
         _dbContext = dbContext;
+        _hub = hub;
     }
 
     [HttpGet]
@@ -82,6 +86,8 @@ public sealed class AdminAvisoController : ControllerBase
         _dbContext.Avisos.Add(aviso);
         await _dbContext.SaveChangesAsync();
 
+        await NotifyAvisosChangedAsync(slug);
+
         return CreatedAtAction(nameof(GetAvisos), new { slug }, new
         {
             aviso.Id,
@@ -128,6 +134,9 @@ public sealed class AdminAvisoController : ControllerBase
         aviso.Prioridade = request.Prioridade ?? "normal";
 
         await _dbContext.SaveChangesAsync();
+
+        await NotifyAvisosChangedAsync(slug);
+
         return Ok(new
         {
             aviso.Id,
@@ -166,6 +175,8 @@ public sealed class AdminAvisoController : ControllerBase
         _dbContext.Avisos.Remove(aviso);
         await _dbContext.SaveChangesAsync();
 
+        await NotifyAvisosChangedAsync(slug);
+
         return NoContent();
     }
 
@@ -186,6 +197,37 @@ public sealed class AdminAvisoController : ControllerBase
 
         var claim = User.FindFirst("predioId")?.Value;
         return int.TryParse(claim, out var claimPredioId) && claimPredioId == predioId;
+    }
+
+    private async Task NotifyAvisosChangedAsync(string slug)
+    {
+        var predio = await _dbContext.Predios
+            .AsNoTracking()
+            .SingleOrDefaultAsync(p => p.Slug == slug);
+
+        if (predio is null) return;
+
+        var agora = DateTime.UtcNow;
+        var avisos = await _dbContext.Avisos
+            .AsNoTracking()
+            .Where(a => a.PredioId == predio.Id && a.Ativo)
+            .Where(a => (!a.InicioEm.HasValue || a.InicioEm <= agora)
+                     && (!a.FimEm.HasValue || a.FimEm >= agora))
+            .OrderByDescending(a => a.CriadoEm)
+            .Select(a => new
+            {
+                a.Id,
+                a.Titulo,
+                a.Mensagem,
+                a.InicioEm,
+                a.FimEm,
+                a.Ativo,
+                a.Prioridade,
+                a.CriadoEm
+            })
+            .ToListAsync();
+
+        await _hub.Clients.Group(slug).SendAsync("ReceiveAvisos", avisos);
     }
 
     public sealed record AvisoRequest(

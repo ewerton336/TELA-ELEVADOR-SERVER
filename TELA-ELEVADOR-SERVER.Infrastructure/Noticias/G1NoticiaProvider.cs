@@ -28,7 +28,7 @@ public sealed class G1NoticiaProvider : RssProviderBase, INoticiaProvider
     {
         var items = new List<NoticiaItem>();
 
-        foreach (var item in ReadItems(xml).Take(15))
+        foreach (var item in ReadItems(xml).Take(10))
         {
             var title = ReadElementValue(item, "title") ?? string.Empty;
             var link = ReadElementValue(item, "link") ?? string.Empty;

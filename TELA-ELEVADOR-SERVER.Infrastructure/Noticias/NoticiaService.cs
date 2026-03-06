@@ -1,21 +1,26 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using TELA_ELEVADOR_SERVER.Application.Noticias;
 using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
 
 namespace TELA_ELEVADOR_SERVER.Infrastructure.Noticias;
 
-public sealed class NoticiaService : INoticiaService
+public sealed partial class NoticiaService : INoticiaService
 {
-    private const int MaxTake = 50;
+    private const int MaxTake = 10;
+    private static readonly Regex HtmlTagRegex = CreateHtmlTagRegex();
     private readonly AppDbContext _dbContext;
+
+    [GeneratedRegex(@"<[^>]*>?", RegexOptions.Compiled)]
+    private static partial Regex CreateHtmlTagRegex();
 
     public NoticiaService(AppDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
-    public async Task<List<NoticiaItem>> BuscarNoticiasAsync(IEnumerable<string> chaves, int take = 30)
+    public async Task<List<NoticiaItem>> BuscarNoticiasAsync(IEnumerable<string> chaves, int take = 10)
     {
         var enabled = chaves
             .Where(chave => !string.IsNullOrWhiteSpace(chave))
@@ -54,7 +59,7 @@ public sealed class NoticiaService : INoticiaService
         return noticiasIntercaladas.Select(n => new NoticiaItem(
                 n.Link,
                 n.Titulo,
-                TrimToNextPunctuation(n.Descricao, 200),
+                StripHtml(TrimToNextPunctuation(n.Descricao, 200)),
                 n.Link,
                 n.ImagemUrl,
                 string.IsNullOrWhiteSpace(n.PubDateRaw) ? n.PublicadoEmUtc.ToString("R", CultureInfo.InvariantCulture) : n.PubDateRaw,
@@ -108,6 +113,11 @@ public sealed class NoticiaService : INoticiaService
         }
 
         return resultado;
+    }
+
+    private static string StripHtml(string text)
+    {
+        return HtmlTagRegex.Replace(text ?? string.Empty, " ").Trim();
     }
 
     private static string TrimToNextPunctuation(string text, int minLength)
