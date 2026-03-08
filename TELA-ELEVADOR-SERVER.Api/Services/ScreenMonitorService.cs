@@ -6,8 +6,25 @@ public sealed class ScreenMonitorService
 {
     private readonly ConcurrentDictionary<string, ScreenInfo> _screens = new();
 
-    public void Register(string connectionId, string slug, string? userAgent, string? appVersion = null)
+    /// <summary>
+    /// Registra uma tela, removendo conexões anteriores com o mesmo slug
+    /// para evitar sessões duplicadas (ex: reconexão antes do timeout da antiga).
+    /// Retorna os connectionIds evictos para que o Hub possa removê-los dos grupos.
+    /// </summary>
+    public IReadOnlyList<string> Register(string connectionId, string slug, string? userAgent, string? appVersion = null)
     {
+        // Evicta conexões anteriores com o mesmo slug (diferente connectionId)
+        var evicted = new List<string>();
+        foreach (var kvp in _screens)
+        {
+            if (kvp.Value.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase)
+                && kvp.Key != connectionId)
+            {
+                if (_screens.TryRemove(kvp.Key, out _))
+                    evicted.Add(kvp.Key);
+            }
+        }
+
         _screens[connectionId] = new ScreenInfo
         {
             ConnectionId = connectionId,
@@ -17,6 +34,8 @@ public sealed class ScreenMonitorService
             UserAgent = userAgent,
             AppVersion = appVersion
         };
+
+        return evicted;
     }
 
     public void UpdateHeartbeat(string connectionId, double uptime, bool isVisible, string? appVersion = null)

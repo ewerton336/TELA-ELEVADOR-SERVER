@@ -22,7 +22,13 @@ public sealed class PredioHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, slug);
 
         var userAgent = Context.GetHttpContext()?.Request.Headers["User-Agent"].ToString();
-        _monitor.Register(Context.ConnectionId, slug, userAgent, appVersion);
+        var evicted = _monitor.Register(Context.ConnectionId, slug, userAgent, appVersion);
+
+        // Remove conexões antigas (evictas) do grupo SignalR
+        foreach (var oldConnId in evicted)
+        {
+            await Groups.RemoveFromGroupAsync(oldConnId, slug);
+        }
 
         await Clients.Group("monitor")
             .SendAsync("ScreenConnected", new

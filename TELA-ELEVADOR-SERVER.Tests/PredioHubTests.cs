@@ -166,4 +166,56 @@ public class PredioHubTests
             p.SendCoreAsync("ScreenHeartbeat", It.IsAny<object?[]>(), default),
             Times.Once);
     }
+
+    // -------------------------------------------------------
+    // Testes de sessão duplicada (mesmo slug, reconexão)
+    // -------------------------------------------------------
+
+    [Fact]
+    public async Task JoinPredio_SameSlugNewConnection_ShouldEvictOldAndRemoveFromGroup()
+    {
+        // Simula: conn-1 já registrado para "gramado"
+        _monitor.Register("old-conn", "gramado", null);
+
+        // Hub (com test-conn-1) faz JoinPredio pro mesmo slug
+        await _hub.JoinPredio("gramado");
+
+        // Deve ter apenas 1 sessão ativa
+        var screens = _monitor.GetAll();
+        screens.Should().HaveCount(1);
+        screens[0].ConnectionId.Should().Be(TestConnectionId);
+
+        // Deve tentar remover a conexão antiga do grupo SignalR
+        _groups.Verify(g =>
+            g.RemoveFromGroupAsync("old-conn", "gramado", default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task JoinPredio_DifferentSlug_ShouldNotEvictOtherBuildings()
+    {
+        // Registra tela de outro prédio
+        _monitor.Register("other-conn", "canela", null);
+
+        // Hub se conecta a "gramado"
+        await _hub.JoinPredio("gramado");
+
+        // Ambas devem existir
+        _monitor.GetAll().Should().HaveCount(2);
+
+        // Não deve remover nada do grupo
+        _groups.Verify(g =>
+            g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task JoinPredio_CalledTwiceSameConnection_ShouldNotDuplicate()
+    {
+        await _hub.JoinPredio("gramado");
+        await _hub.JoinPredio("gramado");
+
+        _monitor.GetAll().Should().HaveCount(1);
+        _monitor.GetAll()[0].ConnectionId.Should().Be(TestConnectionId);
+    }
 }
