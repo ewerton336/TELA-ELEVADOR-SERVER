@@ -73,6 +73,57 @@ public sealed class AdminPredioController : ControllerBase
         return Ok(new { predio.OrientationMode });
     }
 
+    [HttpGet("modulos")]
+    public async Task<IActionResult> GetModules([FromRoute] string slug)
+    {
+        var predio = await _dbContext.Predios
+            .AsNoTracking()
+            .SingleOrDefaultAsync(p => p.Slug == slug);
+
+        if (predio is null)
+            return NotFound(new { message = "Predio nao encontrado." });
+
+        if (!HasAccessToPredio(predio.Id))
+            return Forbid();
+
+        return Ok(new ScreenModulesResponse(
+            predio.ModuloBuildingNotice,
+            predio.ModuloWeather,
+            predio.ModuloHeadlineNews,
+            predio.ModuloNewsTicker));
+    }
+
+    [HttpPut("modulos")]
+    public async Task<IActionResult> UpdateModules(
+        [FromRoute] string slug,
+        [FromBody] ScreenModulesRequest request)
+    {
+        var predio = await _dbContext.Predios
+            .SingleOrDefaultAsync(p => p.Slug == slug);
+
+        if (predio is null)
+            return NotFound(new { message = "Predio nao encontrado." });
+
+        if (!HasAccessToPredio(predio.Id))
+            return Forbid();
+
+        predio.ModuloBuildingNotice = request.BuildingNotice;
+        predio.ModuloWeather = request.Weather;
+        predio.ModuloHeadlineNews = request.HeadlineNews;
+        predio.ModuloNewsTicker = request.NewsTicker;
+        await _dbContext.SaveChangesAsync();
+
+        var modules = new ScreenModulesResponse(
+            predio.ModuloBuildingNotice,
+            predio.ModuloWeather,
+            predio.ModuloHeadlineNews,
+            predio.ModuloNewsTicker);
+
+        await _hub.Clients.Group(slug).SendAsync("ReceiveModules", modules);
+
+        return Ok(modules);
+    }
+
     private bool HasAccessToPredio(int predioId)
     {
         var role = User.FindFirst("role")?.Value;
@@ -86,4 +137,6 @@ public sealed class AdminPredioController : ControllerBase
     }
 
     public sealed record OrientationRequest(string OrientationMode);
+    public sealed record ScreenModulesRequest(bool BuildingNotice, bool Weather, bool HeadlineNews, bool NewsTicker);
+    public sealed record ScreenModulesResponse(bool BuildingNotice, bool Weather, bool HeadlineNews, bool NewsTicker);
 }

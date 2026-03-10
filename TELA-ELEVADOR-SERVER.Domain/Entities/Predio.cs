@@ -12,6 +12,12 @@ public sealed class Predio : BaseEntity
 
     public string OrientationMode { get; set; } = "auto";
 
+    // Módulos configuráveis da tela do elevador
+    public bool ModuloBuildingNotice { get; set; } = true;
+    public bool ModuloWeather { get; set; } = true;
+    public bool ModuloHeadlineNews { get; set; } = true;
+    public bool ModuloNewsTicker { get; set; } = true;
+
     public ICollection<Sindico> Sindicos { get; set; } = new List<Sindico>();
     public ICollection<Aviso> Avisos { get; set; } = new List<Aviso>();
     public ICollection<NoticiaInterna> NoticiasInternas { get; set; } = new List<NoticiaInterna>();

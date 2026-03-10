@@ -15,5 +15,10 @@ public sealed class PredioEfConfiguration : IEntityTypeConfiguration<Predio>
         builder.Property(p => p.OrientationMode)
             .HasMaxLength(20)
             .HasDefaultValue("auto");
+
+        builder.Property(p => p.ModuloBuildingNotice).HasDefaultValue(true);
+        builder.Property(p => p.ModuloWeather).HasDefaultValue(true);
+        builder.Property(p => p.ModuloHeadlineNews).HasDefaultValue(true);
+        builder.Property(p => p.ModuloNewsTicker).HasDefaultValue(true);
     }
 }

@@ -34,7 +34,14 @@ public sealed class PublicPredioController : ControllerBase
             predio.Nome,
             predio.Cidade,
             predio.OrientationMode,
-            predio.CriadoEm
+            predio.CriadoEm,
+            Modules = new
+            {
+                BuildingNotice = predio.ModuloBuildingNotice,
+                Weather = predio.ModuloWeather,
+                HeadlineNews = predio.ModuloHeadlineNews,
+                NewsTicker = predio.ModuloNewsTicker
+            }
         });
     }
 }
