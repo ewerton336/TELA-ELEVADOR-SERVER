@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TELA_ELEVADOR_SERVER.Domain.Entities;
@@ -11,6 +12,8 @@ public sealed class ClimaWorker : BackgroundService
     private readonly ILogger<ClimaWorker> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly int _intervalMinutes;
+    private readonly int _retryIntervalMinutes;
+    private readonly string _apiBaseUrl;
 
     private static readonly Dictionary<int, (string Description, string Icon)> WeatherCodeMap = new()
     {
@@ -35,11 +38,13 @@ public sealed class ClimaWorker : BackgroundService
         { 95, ("Tempestade", "⛈️") },
     };
 
-    public ClimaWorker(ILogger<ClimaWorker> logger, IServiceProvider serviceProvider)
+    public ClimaWorker(ILogger<ClimaWorker> logger, IServiceProvider serviceProvider, IConfiguration configuration)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _intervalMinutes = 240; // 4 horas padrão
+        _intervalMinutes = configuration.GetValue("ClimaWorker:IntervaloExecucaoMinutos", 240);
+        _retryIntervalMinutes = configuration.GetValue("ClimaWorker:IntervaloRetryMinutos", 15);
+        _apiBaseUrl = configuration.GetValue("ClimaWorker:ApiUrl", "https://api.open-meteo.com/v1/forecast")!;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -48,6 +53,7 @@ public sealed class ClimaWorker : BackgroundService
 
         // Executar uma vez na inicialização
         await FetchAndStoreClimateAsync(stoppingToken);
+        await RetryUnknownForecastsAsync(stoppingToken);
 
         // Executar periodicamente
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(_intervalMinutes));
@@ -56,6 +62,7 @@ public sealed class ClimaWorker : BackgroundService
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
                 await FetchAndStoreClimateAsync(stoppingToken);
+                await RetryUnknownForecastsAsync(stoppingToken);
             }
         }
         catch (OperationCanceledException)
@@ -111,10 +118,113 @@ public sealed class ClimaWorker : BackgroundService
         }
     }
 
+    private async Task RetryUnknownForecastsAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateAsyncScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                // Buscar previsões com descrição "Desconhecido"
+                var previsaoDesconhecidas = await dbContext.ClimaPrevisoesData
+                    .Where(cp => cp.Descricao == "Desconhecido")
+                    .ToListAsync(stoppingToken);
+
+                if (previsaoDesconhecidas.Count == 0)
+                {
+                    _logger.LogInformation("Nenhuma previsão com descrição 'Desconhecido' encontrada. Retry encerrado.");
+                    return;
+                }
+
+                // Agrupar por cidade
+                var cidadeIds = previsaoDesconhecidas.Select(p => p.CidadeId).Distinct().ToList();
+                var cidades = await dbContext.Cidades
+                    .Where(c => cidadeIds.Contains(c.Id))
+                    .ToListAsync(stoppingToken);
+
+                _logger.LogInformation(
+                    "Encontrada(s) {Count} previsão(ões) 'Desconhecido' em {CidadeCount} cidade(s). Tentando novamente em {RetryMinutes} minutos...",
+                    previsaoDesconhecidas.Count, cidades.Count, _retryIntervalMinutes);
+
+                // Aguardar o intervalo de retry antes de buscar novamente
+                await Task.Delay(TimeSpan.FromMinutes(_retryIntervalMinutes), stoppingToken);
+
+                foreach (var cidade in cidades)
+                {
+                    try
+                    {
+                        await TryFixUnknownForecastsForCityAsync(dbContext, cidade, stoppingToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Erro ao tentar corrigir previsões desconhecidas para cidade {CidadeNome}", cidade.NomeExibicao);
+                    }
+                }
+
+                await dbContext.SaveChangesAsync(stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro durante retry de previsões desconhecidas");
+                return;
+            }
+        }
+    }
+
+    private async Task TryFixUnknownForecastsForCityAsync(AppDbContext dbContext, Cidade cidade, CancellationToken stoppingToken)
+    {
+        var url = $"{_apiBaseUrl}?latitude={cidade.Latitude}&longitude={cidade.Longitude}&daily=temperature_2m_max,temperature_2m_min,weather_code&temperature_unit=celsius&timezone=auto";
+
+        _logger.LogInformation("Retry: buscando clima para {CidadeNome} para corrigir previsões desconhecidas", cidade.NomeExibicao);
+
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        var response = await client.GetAsync(url, stoppingToken);
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadAsStringAsync(stoppingToken);
+        var weatherData = ParseOpenMeteoResponse(json);
+
+        if (weatherData == null)
+            return;
+
+        // Buscar apenas as previsões desconhecidas desta cidade
+        var previsaoDesconhecidas = await dbContext.ClimaPrevisoesData
+            .Where(cp => cp.CidadeId == cidade.Id && cp.Descricao == "Desconhecido")
+            .ToListAsync(stoppingToken);
+
+        var corrigidas = 0;
+
+        foreach (var previsao in previsaoDesconhecidas)
+        {
+            // Encontrar o dia correspondente na nova resposta da API
+            var diaAtualizado = weatherData.Dias.FirstOrDefault(d => d.Data == previsao.Data);
+
+            if (diaAtualizado != null && diaAtualizado.Descricao != "Desconhecido")
+            {
+                previsao.Descricao = diaAtualizado.Descricao;
+                previsao.Icone = diaAtualizado.Icone;
+                previsao.CodigoWmo = diaAtualizado.CodigoWmo;
+                previsao.TemperaturaMaxima = (int)Math.Round(diaAtualizado.TemperaturaMaxima);
+                previsao.TemperaturaMinima = (int)Math.Round(diaAtualizado.TemperaturaMinima);
+                previsao.AtualizadoEm = DateTime.UtcNow;
+                corrigidas++;
+            }
+        }
+
+        _logger.LogInformation("Retry: {Corrigidas}/{Total} previsão(ões) corrigida(s) para {CidadeNome}",
+            corrigidas, previsaoDesconhecidas.Count, cidade.NomeExibicao);
+    }
+
     private async Task FetchAndStoreCityWeatherAsync(AppDbContext dbContext, Cidade cidade, CancellationToken stoppingToken)
     {
         // Usar Open-Meteo API (gratuita, sem autenticação necessária)
-        var url = $"https://api.open-meteo.com/v1/forecast?latitude={cidade.Latitude}&longitude={cidade.Longitude}&daily=temperature_2m_max,temperature_2m_min,weather_code&temperature_unit=celsius&timezone=auto";
+        var url = $"{_apiBaseUrl}?latitude={cidade.Latitude}&longitude={cidade.Longitude}&daily=temperature_2m_max,temperature_2m_min,weather_code&temperature_unit=celsius&timezone=auto";
 
         _logger.LogInformation("Buscando clima para {CidadeNome} (Lat: {Latitude}, Lon: {Longitude})", cidade.NomeExibicao, cidade.Latitude, cidade.Longitude);
 

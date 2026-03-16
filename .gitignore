@@ -80,6 +80,9 @@ OpenCover/
 publish/
 PublishProfiles/
 
+# Worker local model templates (never version)
+TELA-ELEVADOR-SERVER.Worker/.modelos/
+
 # OS-specific files
 .DS_Store
 Thumbs.db
