@@ -1,0 +1,104 @@
+name: Deploy SERVER to VPS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+concurrency:
+  group: deploy-server-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy SERVER
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create deploy package
+        run: |
+          set +e
+          tar \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=.vscode \
+            --exclude=**/bin \
+            --exclude=**/obj \
+            --exclude=*.log \
+            --exclude=deploy.tar.gz \
+            -czf deploy.tar.gz .
+          TAR_EXIT=$?
+          set -e
+          if [ $TAR_EXIT -gt 1 ]; then
+            echo "tar failed with code $TAR_EXIT"
+            exit $TAR_EXIT
+          fi
+          echo "Package size: $(du -h deploy.tar.gz | cut -f1)"
+
+      - name: Configure SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload package
+        run: |
+          scp deploy.tar.gz ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/tela-elevador-server-deploy.tar.gz
+
+      - name: Deploy on server
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
+            set -e
+
+            DEPLOY_DIR="${{ secrets.VPS_DEPLOY_DIR_SERVER }}"
+            if [ -z "$DEPLOY_DIR" ]; then DEPLOY_DIR="/opt/tela-elevador-server"; fi
+
+            API_PORT="${{ secrets.SERVER_API_PORT }}"
+            if [ -z "$API_PORT" ]; then API_PORT="8080"; fi
+
+            echo "=== Extracting code ==="
+            mkdir -p "$DEPLOY_DIR"
+            tar -xzf /tmp/tela-elevador-server-deploy.tar.gz -C "$DEPLOY_DIR"
+            rm -f /tmp/tela-elevador-server-deploy.tar.gz
+
+            echo "=== Rebuilding and starting compose ==="
+            cd "$DEPLOY_DIR"
+            docker compose down || true
+            docker compose up -d --build
+
+            echo "=== Waiting startup ==="
+            sleep 15
+
+            echo "=== Checking compose services ==="
+            docker compose ps
+
+            echo "=== API connectivity check ==="
+            HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$API_PORT" || echo "000")
+            if [ "$HTTP_STATUS" = "000" ]; then
+              echo "API did not respond on localhost:$API_PORT"
+              docker compose logs --tail=120 api || true
+              exit 1
+            fi
+            echo "API responded with HTTP $HTTP_STATUS"
+
+            echo "=== Worker running check ==="
+            RUNNING_SERVICES=$(docker compose ps --services --filter status=running)
+            echo "$RUNNING_SERVICES"
+            echo "$RUNNING_SERVICES" | grep -q '^worker$' || {
+              echo "Worker service is not running"
+              docker compose logs --tail=120 worker || true
+              exit 1
+            }
+          DEPLOY_SCRIPT
