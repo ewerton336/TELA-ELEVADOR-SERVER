@@ -7,17 +7,19 @@ public sealed class ScreenMonitorService
     private readonly ConcurrentDictionary<string, ScreenInfo> _screens = new();
 
     /// <summary>
-    /// Registra uma tela, removendo conexões anteriores com o mesmo slug
+    /// Registra uma tela, removendo conexões anteriores do mesmo dispositivo
     /// para evitar sessões duplicadas (ex: reconexão antes do timeout da antiga).
     /// Retorna os connectionIds evictos para que o Hub possa removê-los dos grupos.
     /// </summary>
-    public IReadOnlyList<string> Register(string connectionId, string slug, string? userAgent, string? appVersion = null)
+    public IReadOnlyList<string> Register(string connectionId, string slug, string? userAgent, string? appVersion = null, string? deviceId = null)
     {
-        // Evicta conexões anteriores com o mesmo slug (diferente connectionId)
+        var normalizedDeviceId = string.IsNullOrWhiteSpace(deviceId) ? connectionId : deviceId;
+
+        // Evicta conexões anteriores do mesmo deviceId (diferente connectionId)
         var evicted = new List<string>();
         foreach (var kvp in _screens)
         {
-            if (kvp.Value.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase)
+            if (string.Equals(kvp.Value.DeviceId, normalizedDeviceId, StringComparison.Ordinal)
                 && kvp.Key != connectionId)
             {
                 if (_screens.TryRemove(kvp.Key, out _))
@@ -28,6 +30,7 @@ public sealed class ScreenMonitorService
         _screens[connectionId] = new ScreenInfo
         {
             ConnectionId = connectionId,
+            DeviceId = normalizedDeviceId,
             Slug = slug,
             ConnectedAt = DateTime.UtcNow,
             LastHeartbeat = DateTime.UtcNow,
@@ -74,6 +77,7 @@ public sealed class ScreenMonitorService
 public sealed class ScreenInfo
 {
     public string ConnectionId { get; set; } = string.Empty;
+    public string DeviceId { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public DateTime ConnectedAt { get; set; }
     public DateTime LastHeartbeat { get; set; }

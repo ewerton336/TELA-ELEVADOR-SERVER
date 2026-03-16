@@ -17,12 +17,12 @@ public sealed class PredioHub : Hub
     /// <summary>
     /// Tela do elevador chama ao conectar, informando qual prédio exibe.
     /// </summary>
-    public async Task JoinPredio(string slug, string? appVersion = null)
+    public async Task JoinPredio(string slug, string? appVersion = null, string? deviceId = null)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, slug);
 
         var userAgent = Context.GetHttpContext()?.Request.Headers["User-Agent"].ToString();
-        var evicted = _monitor.Register(Context.ConnectionId, slug, userAgent, appVersion);
+        var evicted = _monitor.Register(Context.ConnectionId, slug, userAgent, appVersion, deviceId);
 
         // Remove conexões antigas (evictas) do grupo SignalR
         foreach (var oldConnId in evicted)
