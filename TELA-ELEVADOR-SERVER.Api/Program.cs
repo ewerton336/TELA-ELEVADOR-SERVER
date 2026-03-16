@@ -92,11 +92,19 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwagger(c =>
+{
+    c.RouteTemplate = "swagger/{documentName}/swagger.json";
+});
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "TELA-ELEVADOR API v1");
+    c.RoutePrefix = "swagger";
+});
+app.MapSwagger();
 
 app.MapHealthChecks("/health");
-app.MapGet("/", () => Results.Redirect("/swagger"));
+app.MapGet("/", () => Results.Ok("TELA-ELEVADOR API online"));
 app.MapControllers();
 app.MapHub<PredioHub>("/hub/predio");
 
@@ -105,9 +113,17 @@ using (var scope = app.Services.CreateScope())
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    logger.LogInformation(">>> [STARTUP] Iniciando migração do banco de dados...");
-    dbContext.Database.Migrate();
-    logger.LogInformation(">>> [STARTUP] Migração concluída.");
+    try
+    {
+        logger.LogInformation(">>> [STARTUP] Iniciando migração do banco de dados...");
+        dbContext.Database.Migrate();
+        logger.LogInformation(">>> [STARTUP] Migração concluída.");
+    }
+    catch (Exception ex)
+    {
+        // Keeps API alive even when database is temporarily unavailable.
+        logger.LogError(ex, ">>> [STARTUP] Falha ao aplicar migração. API continuará em execução e tentará reconectar sob demanda.");
+    }
 
     if (app.Environment.IsDevelopment())
     {
