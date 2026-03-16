@@ -10,8 +10,8 @@ Arquivo:
 
 Trigger:
 
-- `push` na branch `main`
-- `pull_request` fechado com merge em `main`
+- `push` na branch `master`
+- `pull_request` fechado com merge em `master`
 
 Fluxo:
 
