@@ -55,11 +55,22 @@ jobs:
 
       - name: Upload package
         run: |
-          scp deploy.tar.gz ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/tela-elevador-server-deploy.tar.gz
+          scp \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
+            -o ConnectTimeout=20 \
+            -o TCPKeepAlive=yes \
+            deploy.tar.gz ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/tela-elevador-server-deploy.tar.gz
 
       - name: Deploy on server
         run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
+          ssh \
+            -T \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
+            -o ConnectTimeout=20 \
+            -o TCPKeepAlive=yes \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
             set -e
 
             DEPLOY_DIR="${{ secrets.VPS_DEPLOY_DIR_SERVER }}"
@@ -75,8 +86,9 @@ jobs:
 
             echo "=== Rebuilding and starting compose ==="
             cd "$DEPLOY_DIR"
-            docker compose down || true
-            docker compose up -d --build
+            export COMPOSE_DOCKER_CLI_BUILD=1
+            export DOCKER_BUILDKIT=1
+            docker compose up -d --build --remove-orphans
 
             echo "=== Waiting startup ==="
             sleep 15

@@ -12,7 +12,6 @@ RUN dotnet restore "TELA-ELEVADOR-SERVER.Worker/TELA-ELEVADOR-SERVER.Worker.cspr
 
 COPY . .
 WORKDIR "/src/TELA-ELEVADOR-SERVER.Worker"
-RUN dotnet build "TELA-ELEVADOR-SERVER.Worker.csproj" -c Release -o /app/build
 
 # Publish stage
 FROM build AS publish
