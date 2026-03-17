@@ -88,6 +88,7 @@ public sealed class AuthController : ControllerBase
         var key = jwtSection.GetValue<string>("Key") ?? string.Empty;
         var issuer = jwtSection.GetValue<string>("Issuer");
         var audience = jwtSection.GetValue<string>("Audience");
+        var expirationMinutes = Math.Max(1, jwtSection.GetValue<int>("ExpirationMinutes", 480));
 
         var claims = new List<Claim>
         {
@@ -105,7 +106,7 @@ public sealed class AuthController : ControllerBase
             issuer: issuer,
             audience: audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(8),
+            expires: DateTime.UtcNow.AddMinutes(expirationMinutes),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

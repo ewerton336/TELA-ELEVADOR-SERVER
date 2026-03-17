@@ -79,6 +79,7 @@ OpenCover/
 # Deployment artifacts
 publish/
 PublishProfiles/
+deploy.tar.gz
 
 # Worker local model templates (never version)
 TELA-ELEVADOR-SERVER.Worker/.modelos/

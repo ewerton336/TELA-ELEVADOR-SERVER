@@ -13,6 +13,8 @@ public sealed class ClimaWorker : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly int _intervalMinutes;
     private readonly int _retryIntervalMinutes;
+    private readonly int _httpTimeoutSeconds;
+    private readonly int _forecastDays;
     private readonly string _apiBaseUrl;
 
     private static readonly Dictionary<int, (string Description, string Icon)> WeatherCodeMap = new()
@@ -44,6 +46,8 @@ public sealed class ClimaWorker : BackgroundService
         _serviceProvider = serviceProvider;
         _intervalMinutes = configuration.GetValue("ClimaWorker:IntervaloExecucaoMinutos", 240);
         _retryIntervalMinutes = configuration.GetValue("ClimaWorker:IntervaloRetryMinutos", 15);
+        _httpTimeoutSeconds = Math.Max(5, configuration.GetValue("ClimaWorker:HttpTimeoutSegundos", 30));
+        _forecastDays = Math.Max(1, configuration.GetValue("ClimaWorker:DiasPrevisao", 7));
         _apiBaseUrl = configuration.GetValue("ClimaWorker:ApiUrl", "https://api.open-meteo.com/v1/forecast")!;
     }
 
@@ -183,7 +187,7 @@ public sealed class ClimaWorker : BackgroundService
 
         _logger.LogInformation("Retry: buscando clima para {CidadeNome} para corrigir previsões desconhecidas", cidade.NomeExibicao);
 
-        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(_httpTimeoutSeconds) };
         var response = await client.GetAsync(url, stoppingToken);
         response.EnsureSuccessStatusCode();
 
@@ -228,7 +232,7 @@ public sealed class ClimaWorker : BackgroundService
 
         _logger.LogInformation("Buscando clima para {CidadeNome} (Lat: {Latitude}, Lon: {Longitude})", cidade.NomeExibicao, cidade.Latitude, cidade.Longitude);
 
-        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(_httpTimeoutSeconds) };
 
         var response = await client.GetAsync(url, stoppingToken);
         response.EnsureSuccessStatusCode();
@@ -311,7 +315,7 @@ public sealed class ClimaWorker : BackgroundService
                 var tempMinArray = tempMins.EnumerateArray().ToList();
                 var codeArray = weatherCodes.EnumerateArray().ToList();
 
-                for (int i = 0; i < Math.Min(timeArray.Count, 7); i++)
+                for (int i = 0; i < Math.Min(timeArray.Count, _forecastDays); i++)
                 {
                     if (DateOnly.TryParse(timeArray[i].GetString(), out var dateValue))
                     {

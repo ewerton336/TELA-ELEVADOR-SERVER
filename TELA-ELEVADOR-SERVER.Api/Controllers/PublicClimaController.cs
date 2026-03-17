@@ -9,10 +9,12 @@ namespace TELA_ELEVADOR_SERVER.Api.Controllers;
 public sealed class PublicClimaController : ControllerBase
 {
     private readonly AppDbContext _dbContext;
+    private readonly int _diasPrevisao;
 
-    public PublicClimaController(AppDbContext dbContext)
+    public PublicClimaController(AppDbContext dbContext, IConfiguration configuration)
     {
         _dbContext = dbContext;
+        _diasPrevisao = Math.Max(1, configuration.GetValue<int>("PublicClima:DiasPrevisao", 7));
     }
 
     [HttpGet]
@@ -29,9 +31,9 @@ public sealed class PublicClimaController : ControllerBase
             return NotFound(new { message = "Prédio ou cidade não encontrado(a)." });
         }
 
-        // Buscar as previsões climáticas dos próximos 7 dias
+        // Buscar as previsões climáticas dos próximos N dias
         var hoje = DateOnly.FromDateTime(DateTime.UtcNow);
-        var fim = hoje.AddDays(7);
+        var fim = hoje.AddDays(_diasPrevisao);
 
         var previsoes = await _dbContext.ClimaPrevisoesData
             .AsNoTracking()

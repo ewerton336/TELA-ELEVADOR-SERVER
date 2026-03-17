@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TELA_ELEVADOR_SERVER.Domain.Entities;
@@ -11,12 +12,22 @@ public sealed class NoticiasWorker : BackgroundService
     private readonly ILogger<NoticiasWorker> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly int _intervalMinutes;
+    private readonly int _initialDelayMilliseconds;
+    private readonly int _retentionDays;
+    private readonly int _httpTimeoutSeconds;
+    private readonly int _maxNoticiasPorFonte;
+    private readonly string _httpUserAgent;
 
-    public NoticiasWorker(ILogger<NoticiasWorker> logger, IServiceProvider serviceProvider)
+    public NoticiasWorker(ILogger<NoticiasWorker> logger, IServiceProvider serviceProvider, IConfiguration configuration)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _intervalMinutes = 120; // 2 horas padrão
+        _intervalMinutes = Math.Max(1, configuration.GetValue("NoticiasWorker:IntervaloExecucaoMinutos", 240));
+        _initialDelayMilliseconds = Math.Max(0, configuration.GetValue("NoticiasWorker:DelayInicialMs", 5000));
+        _retentionDays = Math.Max(1, configuration.GetValue("NoticiasWorker:RetencaoDias", 7));
+        _httpTimeoutSeconds = Math.Max(5, configuration.GetValue("NoticiasWorker:HttpTimeoutSegundos", 60));
+        _maxNoticiasPorFonte = Math.Max(1, configuration.GetValue("NoticiasWorker:MaxNoticiasPorFonte", 500));
+        _httpUserAgent = configuration.GetValue("NoticiasWorker:UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")!;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -24,7 +35,11 @@ public sealed class NoticiasWorker : BackgroundService
         _logger.LogInformation("NoticiasWorker iniciado. Intervalo: {IntervalMinutes} minutos", _intervalMinutes);
 
         // Executar uma vez na inicialização com pequeno delay
-        await Task.Delay(5000, stoppingToken);
+        if (_initialDelayMilliseconds > 0)
+        {
+            await Task.Delay(_initialDelayMilliseconds, stoppingToken);
+        }
+
         await FetchAndStoreNewsAsync(stoppingToken);
 
         // Executar periodicamente
@@ -69,6 +84,18 @@ public sealed class NoticiasWorker : BackgroundService
                 }
             }
 
+            // Limpa notícias antigas por data de criação (retenção de 7 dias)
+            var limiteCriadoEm = DateTime.UtcNow.AddDays(-_retentionDays);
+            var noticiasExpiradas = await dbContext.Noticias
+                .Where(n => n.CriadoEm < limiteCriadoEm)
+                .ToListAsync(stoppingToken);
+
+            if (noticiasExpiradas.Count > 0)
+            {
+                dbContext.Noticias.RemoveRange(noticiasExpiradas);
+                _logger.LogInformation("Removidas {Removidas} notícias antigas (CriadoEm < {LimiteUtc:o})", noticiasExpiradas.Count, limiteCriadoEm);
+            }
+
             try
             {
                 await dbContext.SaveChangesAsync(stoppingToken);
@@ -94,8 +121,11 @@ public sealed class NoticiasWorker : BackgroundService
             return;
         }
 
-        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
-        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(_httpTimeoutSeconds) };
+        if (!string.IsNullOrWhiteSpace(_httpUserAgent))
+        {
+            client.DefaultRequestHeaders.Add("User-Agent", _httpUserAgent);
+        }
 
         _logger.LogInformation("Buscando RSS da fonte {FonteNome} em {Url}", fonte.Nome, fonte.UrlBase);
 
@@ -123,11 +153,11 @@ public sealed class NoticiasWorker : BackgroundService
                 }
             }
 
-            // Manter apenas últimas 500 notícias por fonte (cleanup)
+            // Manter apenas as N últimas notícias por fonte (cleanup)
             var noticiasAntigas = await dbContext.Noticias
                 .Where(n => n.FonteChave == fonte.Chave)
                 .OrderByDescending(n => n.PublicadoEmUtc)
-                .Skip(500)
+                .Skip(_maxNoticiasPorFonte)
                 .ToListAsync(stoppingToken);
 
             foreach (var noticia in noticiasAntigas)

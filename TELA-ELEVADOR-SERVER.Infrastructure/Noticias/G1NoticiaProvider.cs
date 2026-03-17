@@ -1,4 +1,5 @@
 using TELA_ELEVADOR_SERVER.Application.Noticias;
+using Microsoft.Extensions.Configuration;
 
 namespace TELA_ELEVADOR_SERVER.Infrastructure.Noticias;
 
@@ -7,8 +8,16 @@ public sealed class G1NoticiaProvider : RssProviderBase, INoticiaProvider
     private const string FeedUrl = "https://g1.globo.com/rss/g1/sp/santos-regiao/";
     private const string FallbackUrl = "https://news.google.com/rss/search?q=santos+OR+baixada+santista+site:g1.globo.com&hl=pt-BR&gl=BR&ceid=BR:pt-419";
 
+    private readonly int _maxItensPorFonte;
+
+    public G1NoticiaProvider(HttpClient httpClient, IConfiguration configuration) : base(httpClient)
+    {
+        _maxItensPorFonte = Math.Max(1, ParseIntOrDefault(configuration["NoticiasProviders:MaxItensPorFonte"], 10));
+    }
+
     public G1NoticiaProvider(HttpClient httpClient) : base(httpClient)
     {
+        _maxItensPorFonte = 10;
     }
 
     public string Chave => "G1";
@@ -28,7 +37,7 @@ public sealed class G1NoticiaProvider : RssProviderBase, INoticiaProvider
     {
         var items = new List<NoticiaItem>();
 
-        foreach (var item in ReadItems(xml).Take(10))
+        foreach (var item in ReadItems(xml).Take(_maxItensPorFonte))
         {
             var title = ReadElementValue(item, "title") ?? string.Empty;
             var link = ReadElementValue(item, "link") ?? string.Empty;
@@ -77,5 +86,10 @@ public sealed class G1NoticiaProvider : RssProviderBase, INoticiaProvider
         if (urlLower.Contains("/politica/")) return "Politica";
 
         return "Baixada Santista";
+    }
+
+    private static int ParseIntOrDefault(string? rawValue, int defaultValue)
+    {
+        return int.TryParse(rawValue, out var parsed) ? parsed : defaultValue;
     }
 }

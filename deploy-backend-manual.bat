@@ -1,5 +1,6 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
+set "EXIT_CODE=0"
 
 pushd "%~dp0"
 
@@ -29,29 +30,29 @@ if "%VPS_HOST%"=="" (
 
 if "%VPS_HOST%"=="" (
   echo [ERRO] VPS_HOST nao informado.
-  popd
-  exit /b 1
+  set "EXIT_CODE=1"
+  goto :end
 )
 
 where tar >nul 2>&1
 if errorlevel 1 (
   echo [ERRO] Comando tar nao encontrado no PATH.
-  popd
-  exit /b 1
+  set "EXIT_CODE=1"
+  goto :end
 )
 
 where ssh >nul 2>&1
 if errorlevel 1 (
   echo [ERRO] Comando ssh nao encontrado no PATH.
-  popd
-  exit /b 1
+  set "EXIT_CODE=1"
+  goto :end
 )
 
 where scp >nul 2>&1
 if errorlevel 1 (
   echo [ERRO] Comando scp nao encontrado no PATH.
-  popd
-  exit /b 1
+  set "EXIT_CODE=1"
+  goto :end
 )
 
 echo === Criando pacote de deploy ===
@@ -59,14 +60,14 @@ if exist "%PACKAGE_FILE%" del /f /q "%PACKAGE_FILE%"
 tar --exclude=.git --exclude=.github --exclude=.vscode --exclude=**/bin --exclude=**/obj --exclude=*.log --exclude=%PACKAGE_FILE% -czf "%PACKAGE_FILE%" .
 if errorlevel 1 (
   echo [ERRO] Falha ao criar pacote %PACKAGE_FILE%.
-  popd
-  exit /b 1
+  set "EXIT_CODE=1"
+  goto :end
 )
 
 if not exist "%REMOTE_DEPLOY_SCRIPT_FILE%" (
   echo [ERRO] Arquivo %REMOTE_DEPLOY_SCRIPT_FILE% nao encontrado.
-  popd
-  exit /b 1
+  set "EXIT_CODE=1"
+  goto :end
 )
 
 echo === Gerando arquivo de variaveis de ambiente ===
@@ -82,8 +83,8 @@ echo === Enviando pacote para %VPS_USER%@%VPS_HOST% ===
 scp %SSH_OPTS% "%PACKAGE_FILE%" %VPS_USER%@%VPS_HOST%:%REMOTE_PACKAGE%
 if errorlevel 1 (
   echo [ERRO] Falha no upload via scp.
-  popd
-  exit /b 1
+  set "EXIT_CODE=1"
+  goto :end
 )
 
 echo === Enviando script de deploy remoto ===
@@ -91,8 +92,8 @@ scp %SSH_OPTS% "%REMOTE_DEPLOY_SCRIPT_FILE%" %VPS_USER%@%VPS_HOST%:%REMOTE_SCRIP
 if errorlevel 1 (
   echo [ERRO] Falha no upload do script remoto.
   del /f /q "%LOCAL_ENV_FILE%" >nul 2>&1
-  popd
-  exit /b 1
+  set "EXIT_CODE=1"
+  goto :end
 )
 
 echo === Enviando arquivo .env para o servidor ===
@@ -100,16 +101,16 @@ scp %SSH_OPTS% "%LOCAL_ENV_FILE%" %VPS_USER%@%VPS_HOST%:%REMOTE_ENV_FILE%
 if errorlevel 1 (
   echo [ERRO] Falha no upload do arquivo .env.
   del /f /q "%LOCAL_ENV_FILE%" >nul 2>&1
-  popd
-  exit /b 1
+  set "EXIT_CODE=1"
+  goto :end
 )
 
 ssh -T %SSH_OPTS% %VPS_USER%@%VPS_HOST% "mkdir -p %VPS_DEPLOY_DIR% && mv %REMOTE_ENV_FILE% %VPS_DEPLOY_DIR%/.env"
 if errorlevel 1 (
   echo [ERRO] Falha ao posicionar .env no servidor.
   del /f /q "%LOCAL_ENV_FILE%" >nul 2>&1
-  popd
-  exit /b 1
+  set "EXIT_CODE=1"
+  goto :end
 )
 
 echo === Executando deploy no servidor ===
@@ -121,10 +122,13 @@ del /f /q "%LOCAL_ENV_FILE%" >nul 2>&1
 
 if not "%SSH_EXIT%"=="0" (
   echo [ERRO] Deploy remoto falhou com codigo %SSH_EXIT%.
-  popd
-  exit /b %SSH_EXIT%
+  set "EXIT_CODE=%SSH_EXIT%"
+  goto :end
 )
 
 echo === Deploy concluido com sucesso ===
+
+:end
+pause
 popd
-exit /b 0
+exit /b %EXIT_CODE%

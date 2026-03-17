@@ -15,10 +15,11 @@ using TELA_ELEVADOR_SERVER.Api.Hubs;
 using TELA_ELEVADOR_SERVER.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+var maxRequestBodySizeMb = Math.Max(1, builder.Configuration.GetValue<int>("KestrelLimits:MaxRequestBodySizeMB", 30));
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 30 * 1024 * 1024; // 30 MB for file uploads
+    options.Limits.MaxRequestBodySize = maxRequestBodySizeMb * 1024L * 1024L;
 });
 
 builder.Services.AddCors(options =>

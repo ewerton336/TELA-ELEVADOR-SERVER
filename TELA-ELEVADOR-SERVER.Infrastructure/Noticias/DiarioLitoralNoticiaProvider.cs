@@ -1,13 +1,21 @@
 using TELA_ELEVADOR_SERVER.Application.Noticias;
+using Microsoft.Extensions.Configuration;
 
 namespace TELA_ELEVADOR_SERVER.Infrastructure.Noticias;
 
 public sealed class DiarioLitoralNoticiaProvider : RssProviderBase, INoticiaProvider
 {
     private const string FeedUrl = "https://www.diariodolitoral.com.br/praia-grande/rss/";
+    private readonly int _maxItensPorFonte;
+
+    public DiarioLitoralNoticiaProvider(HttpClient httpClient, IConfiguration configuration) : base(httpClient)
+    {
+        _maxItensPorFonte = Math.Max(1, ParseIntOrDefault(configuration["NoticiasProviders:MaxItensPorFonte"], 10));
+    }
 
     public DiarioLitoralNoticiaProvider(HttpClient httpClient) : base(httpClient)
     {
+        _maxItensPorFonte = 10;
     }
 
     public string Chave => "DiarioDoLitoral";
@@ -27,7 +35,7 @@ public sealed class DiarioLitoralNoticiaProvider : RssProviderBase, INoticiaProv
     {
         var items = new List<NoticiaItem>();
 
-        foreach (var item in ReadItems(xml).Take(10))
+        foreach (var item in ReadItems(xml).Take(_maxItensPorFonte))
         {
             var title = ReadElementValue(item, "title") ?? string.Empty;
             var link = ReadElementValue(item, "link") ?? string.Empty;
@@ -50,5 +58,10 @@ public sealed class DiarioLitoralNoticiaProvider : RssProviderBase, INoticiaProv
         }
 
         return items;
+    }
+
+    private static int ParseIntOrDefault(string? rawValue, int defaultValue)
+    {
+        return int.TryParse(rawValue, out var parsed) ? parsed : defaultValue;
     }
 }
