@@ -1,17 +1,16 @@
-version: "3.8"
-
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/ewerton336/tela-elevador-server-api:latest
     container_name: elevador_api
     ports:
       - "8080:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Kestrel__Endpoints__Http__Url: "http://0.0.0.0:8080"
-      ConnectionStrings__DefaultConnection: "Host=${DB_HOST:-130.250.189.175};Port=${DB_PORT:-5432};Database=${DB_NAME:-TELA_ELEVADOR};Username=${DB_USER:-dba};Password=${DB_PASSWORD:-Bb3491818835!}"
+      ConnectionStrings__DefaultConnection: "Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "TELA_ELEVADOR"
+      Jwt__Audience: "TELA_ELEVADOR"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -19,13 +18,11 @@ services:
     restart: unless-stopped
 
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
+    image: ghcr.io/ewerton336/tela-elevador-server-worker:latest
     container_name: elevador_worker
     environment:
       DOTNET_ENVIRONMENT: Production
-      ConnectionStrings__DefaultConnection: "Host=${DB_HOST:-130.250.189.175};Port=${DB_PORT:-5432};Database=${DB_NAME:-TELA_ELEVADOR};Username=${DB_USER:-dba};Password=${DB_PASSWORD:-Bb3491818835!}"
+      ConnectionStrings__DefaultConnection: "Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped

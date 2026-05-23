@@ -1,5 +1,144 @@
-# Backend workflow temporarily disabled.
-# Keep frontend workflow active in TELA-ELEVADOR-WEB/.github/workflows/deploy-web.yml.
-#
-# Previous backend deploy workflow intentionally commented out.
-# To restore, recover from git history and re-enable this file.
+name: Deploy Server to VPS
+
+on:
+  push:
+    branches: [master]
+
+  pull_request:
+    branches: [master]
+    types: [closed]
+
+jobs:
+  deploy:
+    name: Build & Deploy API + Worker
+    runs-on: ubuntu-latest
+
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE_API: ghcr.io/ewerton336/tela-elevador-server-api
+      IMAGE_WORKER: ghcr.io/ewerton336/tela-elevador-server-worker
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push imagem da API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_API }}:latest
+            ${{ env.IMAGE_API }}:${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build e push imagem do Worker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.worker
+          push: true
+          tags: |
+            ${{ env.IMAGE_WORKER }}:latest
+            ${{ env.IMAGE_WORKER }}:${{ github.sha }}
+          cache-from: type=gha,scope=worker
+          cache-to: type=gha,mode=max,scope=worker
+
+      - name: Configurar SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Adicionar VPS ao known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Enviar docker-compose.yml para a VPS
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "mkdir -p ${{ secrets.VPS_DEPLOY_DIR_SERVER }}"
+          scp docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_DIR_SERVER }}/docker-compose.yml
+
+      - name: Deploy no servidor
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
+            set -e
+            cd "${{ secrets.VPS_DEPLOY_DIR_SERVER }}"
+
+            export DB_HOST="${{ secrets.DB_HOST }}"
+            export DB_PORT="${{ secrets.DB_PORT }}"
+            export DB_NAME="${{ secrets.DB_NAME }}"
+            export DB_USER="${{ secrets.DB_USER }}"
+            export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            export JWT_KEY="${{ secrets.JWT_KEY }}"
+
+            echo "=== Autenticando no ghcr.io ==="
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            echo "=== Baixando imagens mais recentes ==="
+            docker compose pull
+
+            echo "=== Subindo containers (api + worker) ==="
+            docker compose up -d
+
+            docker logout ghcr.io || true
+
+            echo "=== Aguardando inicialização (15s) ==="
+            sleep 15
+
+            echo "=== Containers ==="
+            docker ps --filter name=elevador_
+
+            echo "=== Health check API (porta 8080) ==="
+            HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/swagger/index.html || echo "000")
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "API respondendo com HTTP $HTTP_STATUS"
+            else
+              echo "API respondeu com HTTP $HTTP_STATUS"
+              echo "=== Últimos logs da API ==="
+              docker compose logs --tail=80 api
+              exit 1
+            fi
+
+            echo "=== Verificando Worker ==="
+            if docker ps --filter name=elevador_worker --filter status=running --format '{{.Names}}' | grep -q elevador_worker; then
+              echo "Worker rodando"
+            else
+              echo "Worker não está rodando"
+              docker compose logs --tail=80 worker
+              exit 1
+            fi
+
+            echo "=== Limpando imagens antigas ==="
+            docker image prune -f || true
+
+            echo "=== Deploy concluído ==="
+          DEPLOY_SCRIPT
+
+      - name: Verificar domínio público
+        run: |
+          echo "Testando https://elevador.ewertondev.com.br/swagger/index.html ..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' https://elevador.ewertondev.com.br/swagger/index.html || echo "000")
+          echo "Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Domínio público retornou $HTTP_STATUS (verifique propagação/Nginx)"
+          fi
