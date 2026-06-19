@@ -17,6 +17,7 @@ public class ScreenMonitorServiceTests
         screens[0].ConnectionId.Should().Be("conn-1");
         screens[0].Slug.Should().Be("gramado");
         screens[0].UserAgent.Should().Be("Mozilla/5.0");
+        screens[0].Connected.Should().BeTrue();
     }
 
     [Fact]
@@ -38,26 +39,6 @@ public class ScreenMonitorServiceTests
         _sut.Register("conn-3", "bento", null);
 
         _sut.GetAll().Should().HaveCount(3);
-    }
-
-    [Fact]
-    public void Unregister_ShouldRemoveScreen()
-    {
-        _sut.Register("conn-1", "gramado", null);
-        _sut.Register("conn-2", "canela", null);
-
-        _sut.Unregister("conn-1");
-
-        var screens = _sut.GetAll();
-        screens.Should().HaveCount(1);
-        screens[0].ConnectionId.Should().Be("conn-2");
-    }
-
-    [Fact]
-    public void Unregister_NonExistentId_ShouldNotThrow()
-    {
-        var act = () => _sut.Unregister("does-not-exist");
-        act.Should().NotThrow();
     }
 
     [Fact]
@@ -198,14 +179,23 @@ public class ScreenMonitorServiceTests
     }
 
     // -------------------------------------------------------
-    // Testes de deduplicação por slug (sessão duplicada)
+    // Deduplicação por deviceId (mesma tela reconectando)
     // -------------------------------------------------------
 
     [Fact]
-    public void Register_SameSlugDifferentConnection_ShouldEvictOldConnection()
+    public void Register_FirstRegistration_ShouldReturnEmptyEvictedList()
     {
-        _sut.Register("conn-1", "gramado", null);
-        _sut.Register("conn-2", "gramado", null);
+        var result = _sut.Register("conn-1", "gramado", null);
+
+        result.Evicted.Should().BeEmpty();
+        result.HadPendingRefresh.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Register_SameDeviceNewConnection_ShouldEvictOldConnection()
+    {
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
+        _sut.Register("conn-2", "gramado", null, null, "device-A");
 
         var screens = _sut.GetAll();
         screens.Should().HaveCount(1);
@@ -213,107 +203,189 @@ public class ScreenMonitorServiceTests
     }
 
     [Fact]
-    public void Register_SameSlugDifferentConnection_ShouldReturnEvictedIds()
+    public void Register_SameDeviceNewConnection_ShouldReturnEvictedIds()
     {
-        _sut.Register("conn-1", "gramado", null);
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
 
-        var evicted = _sut.Register("conn-2", "gramado", null);
+        var result = _sut.Register("conn-2", "gramado", null, null, "device-A");
 
-        evicted.Should().HaveCount(1);
-        evicted[0].Should().Be("conn-1");
+        result.Evicted.Should().ContainSingle().Which.Should().Be("conn-1");
     }
 
     [Fact]
-    public void Register_DifferentSlugs_ShouldNotEvictAnything()
+    public void Register_DifferentDevices_ShouldNotEvictAnything()
     {
-        _sut.Register("conn-1", "gramado", null);
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
 
-        var evicted = _sut.Register("conn-2", "canela", null);
+        var result = _sut.Register("conn-2", "gramado", null, null, "device-B");
 
-        evicted.Should().BeEmpty();
+        result.Evicted.Should().BeEmpty();
         _sut.GetAll().Should().HaveCount(2);
     }
 
     [Fact]
     public void Register_SameConnectionId_ShouldNotEvictItself()
     {
-        _sut.Register("conn-1", "gramado", null);
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
 
-        var evicted = _sut.Register("conn-1", "gramado", null);
+        var result = _sut.Register("conn-1", "gramado", null, null, "device-A");
 
-        evicted.Should().BeEmpty();
+        result.Evicted.Should().BeEmpty();
         _sut.GetAll().Should().HaveCount(1);
     }
 
     [Fact]
-    public void Register_MultipleOldConnections_SameSlug_ShouldEvictAll()
+    public void Register_SameDeviceReconnect_ShouldNotInheritOldUptime()
     {
-        // Simula cenário extremo: 3 conexões antigas do mesmo slug acumuladas
-        // (possível se o cleanup falhou em cascata)
-        _sut.Register("conn-1", "gramado", null);
-        // Forçar inserção sem dedup para simular estado corrompido
-        // O segundo Register evicta conn-1
-        _sut.Register("conn-2", "gramado", null);
-        // Agora registrar mais um com slug diferente (não impactado)
-        _sut.Register("conn-3", "canela", null);
-
-        // conn-4 para gramado deve evictar conn-2 (o único gramado restante)
-        var evicted = _sut.Register("conn-4", "gramado", null);
-
-        evicted.Should().HaveCount(1);
-        evicted.Should().Contain("conn-2");
-        _sut.GetAll().Should().HaveCount(2); // conn-3 canela + conn-4 gramado
-        _sut.GetBySlug("gramado").Should().HaveCount(1);
-        _sut.GetBySlug("gramado")[0].ConnectionId.Should().Be("conn-4");
-    }
-
-    [Fact]
-    public void Register_SameSlug_CaseInsensitive_ShouldEvictOld()
-    {
-        _sut.Register("conn-1", "gramado", null);
-
-        var evicted = _sut.Register("conn-2", "GRAMADO", null);
-
-        evicted.Should().HaveCount(1);
-        evicted[0].Should().Be("conn-1");
-        _sut.GetAll().Should().HaveCount(1);
-        _sut.GetAll()[0].ConnectionId.Should().Be("conn-2");
-    }
-
-    [Fact]
-    public void Register_NewConnection_ShouldNotInheritOldData()
-    {
-        _sut.Register("conn-1", "gramado", "OldBrowser", "v1.0");
+        _sut.Register("conn-1", "gramado", "OldBrowser", "v1.0", "device-A");
         _sut.UpdateHeartbeat("conn-1", 3600, true);
 
-        _sut.Register("conn-2", "gramado", "NewBrowser", "v2.0");
+        _sut.Register("conn-2", "gramado", "NewBrowser", "v2.0", "device-A");
 
         var screen = _sut.GetAll()[0];
         screen.ConnectionId.Should().Be("conn-2");
         screen.UserAgent.Should().Be("NewBrowser");
         screen.AppVersion.Should().Be("v2.0");
-        screen.Uptime.Should().Be(0); // Reset, não herda uptime antigo
+        screen.Uptime.Should().Be(0); // reinicia, não herda uptime antigo
+        screen.Connected.Should().BeTrue();
     }
 
     [Fact]
     public void Register_EvictedConnection_ShouldNotRespondToHeartbeat()
     {
-        _sut.Register("conn-1", "gramado", null);
-        _sut.Register("conn-2", "gramado", null); // evicta conn-1
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
+        _sut.Register("conn-2", "gramado", null, null, "device-A"); // evicta conn-1
 
         // Heartbeat do conn-1 antigo não deve causar efeito
         _sut.UpdateHeartbeat("conn-1", 999, true);
 
         _sut.GetAll().Should().HaveCount(1);
         _sut.GetAll()[0].ConnectionId.Should().Be("conn-2");
-        _sut.GetAll()[0].Uptime.Should().Be(0); // Não foi afetado
+        _sut.GetAll()[0].Uptime.Should().Be(0);
+    }
+
+    // -------------------------------------------------------
+    // Retenção: marca offline e mantém por até 8h
+    // -------------------------------------------------------
+
+    [Fact]
+    public void MarkDisconnected_ShouldKeepScreenButMarkOffline()
+    {
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
+
+        var info = _sut.MarkDisconnected("conn-1");
+
+        info.Should().NotBeNull();
+        var screens = _sut.GetAll();
+        screens.Should().HaveCount(1);
+        screens[0].Connected.Should().BeFalse();
+        screens[0].DisconnectedAt.Should().NotBeNull();
     }
 
     [Fact]
-    public void Register_FirstRegistration_ShouldReturnEmptyEvictedList()
+    public void MarkDisconnected_NonExistentId_ShouldReturnNull()
     {
-        var evicted = _sut.Register("conn-1", "gramado", null);
+        var info = _sut.MarkDisconnected("does-not-exist");
+        info.Should().BeNull();
+    }
 
-        evicted.Should().BeEmpty();
+    [Fact]
+    public void MarkDisconnected_StaleConnectionId_ShouldBeNoOp()
+    {
+        // Tela reconectou com conn-2 antes do disconnect do conn-1 chegar.
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
+        _sut.Register("conn-2", "gramado", null, null, "device-A");
+
+        var info = _sut.MarkDisconnected("conn-1"); // connectionId antigo
+
+        info.Should().BeNull(); // não corresponde à sessão atual
+        _sut.GetAll()[0].Connected.Should().BeTrue(); // sessão atual continua online
+    }
+
+    [Fact]
+    public void Reconnect_ShouldClearOfflineState()
+    {
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
+        _sut.MarkDisconnected("conn-1");
+
+        _sut.Register("conn-2", "gramado", null, null, "device-A");
+
+        var screen = _sut.GetAll()[0];
+        screen.Connected.Should().BeTrue();
+        screen.DisconnectedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetAll_ShouldPurgeDisconnectedScreensOlderThanRetentionWindow()
+    {
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
+        var info = _sut.MarkDisconnected("conn-1");
+        info.Should().NotBeNull();
+
+        // Simula desconexão há mais de 8h
+        info!.DisconnectedAt = DateTime.UtcNow - ScreenMonitorService.RetentionWindow - TimeSpan.FromMinutes(1);
+
+        _sut.GetAll().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void GetAll_ShouldKeepDisconnectedScreensWithinRetentionWindow()
+    {
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
+        _sut.MarkDisconnected("conn-1");
+
+        _sut.GetAll().Should().HaveCount(1);
+    }
+
+    // -------------------------------------------------------
+    // Refresh pendente (comando para tela offline)
+    // -------------------------------------------------------
+
+    [Fact]
+    public void RequestRefresh_ConnectedScreen_ShouldReturnConnectionIdAndNotQueue()
+    {
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
+
+        var target = _sut.RequestRefresh("device-A");
+
+        target.Found.Should().BeTrue();
+        target.Connected.Should().BeTrue();
+        target.ConnectionId.Should().Be("conn-1");
+        _sut.GetAll()[0].PendingRefresh.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RequestRefresh_OfflineScreen_ShouldQueuePendingRefresh()
+    {
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
+        _sut.MarkDisconnected("conn-1");
+
+        var target = _sut.RequestRefresh("device-A");
+
+        target.Found.Should().BeTrue();
+        target.Connected.Should().BeFalse();
+        target.ConnectionId.Should().BeNull();
+        _sut.GetAll()[0].PendingRefresh.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RequestRefresh_UnknownDevice_ShouldReturnNotFound()
+    {
+        var target = _sut.RequestRefresh("ghost-device");
+
+        target.Found.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Register_AfterPendingRefresh_ShouldReportAndClearIt()
+    {
+        _sut.Register("conn-1", "gramado", null, null, "device-A");
+        _sut.MarkDisconnected("conn-1");
+        _sut.RequestRefresh("device-A"); // agenda refresh
+
+        var result = _sut.Register("conn-2", "gramado", null, null, "device-A");
+
+        result.HadPendingRefresh.Should().BeTrue();
+        _sut.GetAll()[0].PendingRefresh.Should().BeFalse(); // consumido
     }
 }

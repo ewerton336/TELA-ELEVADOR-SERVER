@@ -61,24 +61,27 @@ public class MasterMonitorControllerTests
     }
 
     [Fact]
-    public void GetScreens_AfterUnregister_ShouldNotIncludeRemoved()
+    public void GetScreens_AfterDisconnect_ShouldStillIncludeOfflineScreen()
     {
-        _monitor.Register("conn-1", "gramado", null);
-        _monitor.Register("conn-2", "canela", null);
-        _monitor.Unregister("conn-1");
+        _monitor.Register("conn-1", "gramado", null, null, "device-1");
+        _monitor.Register("conn-2", "canela", null, null, "device-2");
+        _monitor.MarkDisconnected("conn-1");
 
         var result = _controller.GetScreens();
 
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         var screens = okResult.Value.Should().BeAssignableTo<IReadOnlyList<ScreenInfo>>().Subject;
-        screens.Should().HaveCount(1);
-        screens[0].Slug.Should().Be("canela");
+        // A tela desconectada continua na lista (offline) — retenção de 8h.
+        screens.Should().HaveCount(2);
+        screens.Should().Contain(s => s.Slug == "gramado" && !s.Connected);
+        screens.Should().Contain(s => s.Slug == "canela" && s.Connected);
     }
 
     [Fact]
-    public async Task ForceRefresh_ValidConnectionId_ShouldSendToClient()
+    public async Task ForceRefresh_OnlineScreen_ShouldSendToCurrentConnection()
     {
-        var request = new ForceRefreshRequest("conn-123");
+        _monitor.Register("conn-123", "gramado", null, null, "device-1");
+        var request = new ForceRefreshRequest("device-1");
 
         var result = await _controller.ForceRefresh(request);
 
@@ -90,7 +93,34 @@ public class MasterMonitorControllerTests
     }
 
     [Fact]
-    public async Task ForceRefresh_EmptyConnectionId_ShouldReturnBadRequest()
+    public async Task ForceRefresh_OfflineScreen_ShouldQueueWithoutSending()
+    {
+        _monitor.Register("conn-123", "gramado", null, null, "device-1");
+        _monitor.MarkDisconnected("conn-123");
+        var request = new ForceRefreshRequest("device-1");
+
+        var result = await _controller.ForceRefresh(request);
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        ok.Value.Should().BeEquivalentTo(new { message = "Tela offline — atualização agendada para a próxima reconexão.", queued = true });
+
+        // Não deve tentar enviar para nenhum cliente (a tela está offline).
+        _hubClients.Verify(c => c.Client(It.IsAny<string>()), Times.Never);
+        _monitor.GetAll()[0].PendingRefresh.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ForceRefresh_UnknownDevice_ShouldReturnNotFound()
+    {
+        var request = new ForceRefreshRequest("ghost-device");
+
+        var result = await _controller.ForceRefresh(request);
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task ForceRefresh_EmptyDeviceId_ShouldReturnBadRequest()
     {
         var request = new ForceRefreshRequest("");
 
@@ -100,7 +130,7 @@ public class MasterMonitorControllerTests
     }
 
     [Fact]
-    public async Task ForceRefresh_WhitespaceConnectionId_ShouldReturnBadRequest()
+    public async Task ForceRefresh_WhitespaceDeviceId_ShouldReturnBadRequest()
     {
         var request = new ForceRefreshRequest("   ");
 

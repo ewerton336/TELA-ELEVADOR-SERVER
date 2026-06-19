@@ -95,14 +95,18 @@ public class PredioHubTests
     }
 
     [Fact]
-    public async Task OnDisconnectedAsync_ShouldUnregisterAndNotify()
+    public async Task OnDisconnectedAsync_ShouldMarkOfflineAndNotify()
     {
         await _hub.JoinPredio("gramado");
         _monitor.GetAll().Should().HaveCount(1);
 
         await _hub.OnDisconnectedAsync(null);
 
-        _monitor.GetAll().Should().BeEmpty();
+        // A tela não é removida — apenas marcada como offline (retenção 8h).
+        var screens = _monitor.GetAll();
+        screens.Should().HaveCount(1);
+        screens[0].Connected.Should().BeFalse();
+        screens[0].DisconnectedAt.Should().NotBeNull();
 
         // Should have called Group("monitor") for disconnect notification
         _groupProxy.Verify(p =>
@@ -111,13 +115,15 @@ public class PredioHubTests
     }
 
     [Fact]
-    public async Task OnDisconnectedAsync_WithException_ShouldStillUnregister()
+    public async Task OnDisconnectedAsync_WithException_ShouldStillMarkOffline()
     {
         await _hub.JoinPredio("gramado");
 
         await _hub.OnDisconnectedAsync(new Exception("connection lost"));
 
-        _monitor.GetAll().Should().BeEmpty();
+        var screens = _monitor.GetAll();
+        screens.Should().HaveCount(1);
+        screens[0].Connected.Should().BeFalse();
     }
 
     [Fact]
@@ -168,16 +174,17 @@ public class PredioHubTests
     }
 
     // -------------------------------------------------------
-    // Testes de sessão duplicada (mesmo slug, reconexão)
+    // Testes de sessão duplicada (mesma tela/deviceId reconectando)
     // -------------------------------------------------------
 
     [Fact]
-    public async Task JoinPredio_SameSlugNewConnection_ShouldEvictOldAndRemoveFromGroup()
+    public async Task JoinPredio_SameDeviceNewConnection_ShouldEvictOldAndRemoveFromGroup()
     {
-        // Simula: conn-1 já registrado para "gramado"
-        _monitor.Register("old-conn", "gramado", null);
+        // Simula: a mesma tela (deviceId = TestConnectionId, pois o hub passa
+        // deviceId nulo) já estava registrada com um connectionId antigo.
+        _monitor.Register("old-conn", "gramado", null, null, TestConnectionId);
 
-        // Hub (com test-conn-1) faz JoinPredio pro mesmo slug
+        // Hub (com test-conn-1) faz JoinPredio — mesma tela, nova conexão
         await _hub.JoinPredio("gramado");
 
         // Deve ter apenas 1 sessão ativa
@@ -192,9 +199,9 @@ public class PredioHubTests
     }
 
     [Fact]
-    public async Task JoinPredio_DifferentSlug_ShouldNotEvictOtherBuildings()
+    public async Task JoinPredio_DifferentDevice_ShouldNotEvictOtherScreens()
     {
-        // Registra tela de outro prédio
+        // Registra tela de outro dispositivo/prédio
         _monitor.Register("other-conn", "canela", null);
 
         // Hub se conecta a "gramado"
@@ -217,5 +224,31 @@ public class PredioHubTests
 
         _monitor.GetAll().Should().HaveCount(1);
         _monitor.GetAll()[0].ConnectionId.Should().Be(TestConnectionId);
+    }
+
+    [Fact]
+    public async Task JoinPredio_WithPendingRefresh_ShouldSendForceRefreshToCaller()
+    {
+        // Tela ficou offline com um refresh agendado.
+        _monitor.Register("old-conn", "gramado", null, null, TestConnectionId);
+        _monitor.MarkDisconnected("old-conn");
+        _monitor.RequestRefresh(TestConnectionId);
+
+        // Ao reconectar, o comando pendente é entregue ao próprio chamador.
+        await _hub.JoinPredio("gramado", null, TestConnectionId);
+
+        _callerProxy.Verify(p =>
+            p.SendCoreAsync("ForceRefresh", It.Is<object?[]>(a => a.Length == 0), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task JoinPredio_WithoutPendingRefresh_ShouldNotSendForceRefresh()
+    {
+        await _hub.JoinPredio("gramado");
+
+        _callerProxy.Verify(p =>
+            p.SendCoreAsync("ForceRefresh", It.IsAny<object?[]>(), default),
+            Times.Never);
     }
 }

@@ -22,10 +22,10 @@ public sealed class PredioHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, slug);
 
         var userAgent = Context.GetHttpContext()?.Request.Headers["User-Agent"].ToString();
-        var evicted = _monitor.Register(Context.ConnectionId, slug, userAgent, appVersion, deviceId);
+        var result = _monitor.Register(Context.ConnectionId, slug, userAgent, appVersion, deviceId);
 
         // Remove conexões antigas (evictas) do grupo SignalR
-        foreach (var oldConnId in evicted)
+        foreach (var oldConnId in result.Evicted)
         {
             await Groups.RemoveFromGroupAsync(oldConnId, slug);
         }
@@ -34,10 +34,18 @@ public sealed class PredioHub : Hub
             .SendAsync("ScreenConnected", new
             {
                 Context.ConnectionId,
+                result.Screen.DeviceId,
                 Slug = slug,
                 ConnectedAt = DateTime.UtcNow,
                 AppVersion = appVersion
             });
+
+        // Havia um comando de atualização agendado enquanto a tela estava
+        // offline — entrega agora, fazendo a tela recarregar.
+        if (result.HadPendingRefresh)
+        {
+            await Clients.Caller.SendAsync("ForceRefresh");
+        }
     }
 
     /// <summary>
@@ -73,14 +81,21 @@ public sealed class PredioHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        _monitor.Unregister(Context.ConnectionId);
+        // Não remove a tela — apenas marca como desconectada. Os dados ficam
+        // retidos para que o admin ainda a veja e possa agendar uma atualização.
+        var info = _monitor.MarkDisconnected(Context.ConnectionId);
 
-        await Clients.Group("monitor")
-            .SendAsync("ScreenDisconnected", new
-            {
-                Context.ConnectionId,
-                DisconnectedAt = DateTime.UtcNow
-            });
+        if (info is not null)
+        {
+            await Clients.Group("monitor")
+                .SendAsync("ScreenDisconnected", new
+                {
+                    Context.ConnectionId,
+                    info.DeviceId,
+                    info.Slug,
+                    DisconnectedAt = DateTime.UtcNow
+                });
+        }
 
         await base.OnDisconnectedAsync(exception);
     }

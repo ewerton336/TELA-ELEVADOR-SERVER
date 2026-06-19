@@ -29,14 +29,25 @@ public sealed class MasterMonitorController : ControllerBase
     [HttpPost("force-refresh")]
     public async Task<IActionResult> ForceRefresh([FromBody] ForceRefreshRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.ConnectionId))
-            return BadRequest(new { message = "connectionId é obrigatório." });
+        if (string.IsNullOrWhiteSpace(request.DeviceId))
+            return BadRequest(new { message = "deviceId é obrigatório." });
 
-        await _hub.Clients.Client(request.ConnectionId)
-            .SendAsync("ForceRefresh");
+        var target = _monitor.RequestRefresh(request.DeviceId);
 
-        return Ok(new { message = "Comando de atualização enviado." });
+        if (!target.Found)
+            return NotFound(new { message = "Tela não encontrada." });
+
+        if (target.Connected && target.ConnectionId is not null)
+        {
+            await _hub.Clients.Client(target.ConnectionId)
+                .SendAsync("ForceRefresh");
+
+            return Ok(new { message = "Comando de atualização enviado.", queued = false });
+        }
+
+        // Tela offline — comando fica agendado para a próxima reconexão.
+        return Ok(new { message = "Tela offline — atualização agendada para a próxima reconexão.", queued = true });
     }
 }
 
-public sealed record ForceRefreshRequest(string ConnectionId);
+public sealed record ForceRefreshRequest(string DeviceId);

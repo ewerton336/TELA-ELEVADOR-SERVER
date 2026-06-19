@@ -100,10 +100,21 @@ public sealed class MasterPredioController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeletePredio([FromRoute] int id)
     {
-        var predio = await _dbContext.Predios.SingleOrDefaultAsync(p => p.Id == id);
+        var predio = await _dbContext.Predios
+            .Include(p => p.Sindicos)
+            .SingleOrDefaultAsync(p => p.Id == id);
         if (predio is null)
         {
             return NotFound(new { message = "Predio nao encontrado." });
+        }
+
+        // A FK Sindico -> Predio usa NO ACTION no banco (sem cascade nem set null),
+        // entao remover o predio diretamente viola a constraint e gera erro 500.
+        // Removemos os sindicos vinculados antes, igual ao cascade ja existente
+        // de Avisos / NoticiasInternas / PreferenciasNoticia.
+        if (predio.Sindicos.Count > 0)
+        {
+            _dbContext.Sindicos.RemoveRange(predio.Sindicos);
         }
 
         _dbContext.Predios.Remove(predio);
