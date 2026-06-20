@@ -13,6 +13,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<Predio> Predios => Set<Predio>();
     public DbSet<Sindico> Sindicos => Set<Sindico>();
     public DbSet<Aviso> Avisos => Set<Aviso>();
+    public DbSet<TickerMensagem> TickerMensagens => Set<TickerMensagem>();
     public DbSet<FonteNoticia> FontesNoticia => Set<FonteNoticia>();
     public DbSet<PreferenciaNoticia> PreferenciasNoticia => Set<PreferenciaNoticia>();
     public DbSet<Noticia> Noticias => Set<Noticia>();

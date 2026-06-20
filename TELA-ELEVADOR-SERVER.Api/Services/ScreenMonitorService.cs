@@ -127,6 +127,19 @@ public sealed class ScreenMonitorService
         return new RefreshRequestResult(Found: true, Connected: false, ConnectionId: null);
     }
 
+    public string? GetActiveConnectionId(string deviceId)
+    {
+        PurgeExpired();
+        if (!string.IsNullOrWhiteSpace(deviceId)
+            && _screens.TryGetValue(deviceId, out var info)
+            && info.Connected
+            && !string.IsNullOrEmpty(info.ConnectionId))
+        {
+            return info.ConnectionId;
+        }
+        return null;
+    }
+
     public IReadOnlyList<ScreenInfo> GetAll()
     {
         PurgeExpired();

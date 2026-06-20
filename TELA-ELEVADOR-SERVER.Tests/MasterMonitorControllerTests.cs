@@ -11,6 +11,7 @@ namespace TELA_ELEVADOR_SERVER.Tests;
 public class MasterMonitorControllerTests
 {
     private readonly ScreenMonitorService _monitor = new();
+    private readonly ScreenshotService _screenshots = new();
     private readonly Mock<IHubContext<PredioHub>> _hubContext = new();
     private readonly Mock<IHubClients> _hubClients = new();
     private readonly Mock<ISingleClientProxy> _clientProxy = new();
@@ -20,7 +21,7 @@ public class MasterMonitorControllerTests
     {
         _hubClients.Setup(c => c.Client(It.IsAny<string>())).Returns(_clientProxy.Object);
         _hubContext.Setup(h => h.Clients).Returns(_hubClients.Object);
-        _controller = new MasterMonitorController(_monitor, _hubContext.Object);
+        _controller = new MasterMonitorController(_monitor, _screenshots, _hubContext.Object);
     }
 
     [Fact]

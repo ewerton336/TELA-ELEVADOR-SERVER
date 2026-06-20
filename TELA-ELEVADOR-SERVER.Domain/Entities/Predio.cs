@@ -20,6 +20,7 @@ public sealed class Predio : BaseEntity
 
     public ICollection<Sindico> Sindicos { get; set; } = new List<Sindico>();
     public ICollection<Aviso> Avisos { get; set; } = new List<Aviso>();
+    public ICollection<TickerMensagem> TickerMensagens { get; set; } = new List<TickerMensagem>();
     public ICollection<NoticiaInterna> NoticiasInternas { get; set; } = new List<NoticiaInterna>();
     public ICollection<PreferenciaNoticia> PreferenciasNoticia { get; set; } = new List<PreferenciaNoticia>();
 
