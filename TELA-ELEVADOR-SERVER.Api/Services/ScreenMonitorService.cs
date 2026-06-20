@@ -28,7 +28,6 @@ public sealed class ScreenMonitorService
         var normalizedDeviceId = string.IsNullOrWhiteSpace(deviceId) ? connectionId : deviceId;
         var now = DateTime.UtcNow;
         var evicted = new List<string>();
-        var hadPendingRefresh = false;
 
         if (_screens.TryGetValue(normalizedDeviceId, out var existing))
         {
@@ -39,7 +38,10 @@ public sealed class ScreenMonitorService
                 evicted.Add(existing.ConnectionId);
             }
 
-            hadPendingRefresh = existing.PendingRefresh;
+            // Ações agendadas enquanto a tela estava offline são consumidas ao reconectar.
+            var hadPendingRefresh = existing.PendingRefresh;
+            var hadPendingScreenshot = existing.PendingScreenshot;
+            var hadPendingDetails = existing.PendingDetails;
 
             existing.ConnectionId = connectionId;
             existing.Slug = slug;
@@ -48,11 +50,13 @@ public sealed class ScreenMonitorService
             existing.Uptime = 0;
             existing.Connected = true;
             existing.DisconnectedAt = null;
-            existing.PendingRefresh = false;  // refresh pendente é consumido ao reconectar
+            existing.PendingRefresh = false;
+            existing.PendingScreenshot = false;
+            existing.PendingDetails = false;
             if (userAgent is not null) existing.UserAgent = userAgent;
             if (appVersion is not null) existing.AppVersion = appVersion;
 
-            return new RegisterResult(existing, evicted, hadPendingRefresh);
+            return new RegisterResult(existing, evicted, hadPendingRefresh, hadPendingScreenshot, hadPendingDetails);
         }
 
         var info = new ScreenInfo
@@ -66,12 +70,14 @@ public sealed class ScreenMonitorService
             Connected = true,
             DisconnectedAt = null,
             PendingRefresh = false,
+            PendingScreenshot = false,
+            PendingDetails = false,
             UserAgent = userAgent,
             AppVersion = appVersion
         };
         _screens[normalizedDeviceId] = info;
 
-        return new RegisterResult(info, evicted, hadPendingRefresh);
+        return new RegisterResult(info, evicted, HadPendingRefresh: false, HadPendingScreenshot: false, HadPendingDetails: false);
     }
 
     public void UpdateHeartbeat(string connectionId, double uptime, bool isVisible, string? appVersion = null)
@@ -110,6 +116,27 @@ public sealed class ScreenMonitorService
     /// offline, marca um refresh pendente que será entregue na reconexão.
     /// </summary>
     public RefreshRequestResult RequestRefresh(string deviceId)
+        => RequestAction(deviceId, info => info.PendingRefresh = true);
+
+    /// <summary>
+    /// Solicita um print da tela. Online → envia agora; offline → agenda para a
+    /// próxima reconexão (a tela do elevador pode estar num andar sem internet).
+    /// </summary>
+    public RefreshRequestResult RequestScreenshot(string deviceId)
+        => RequestAction(deviceId, info => info.PendingScreenshot = true);
+
+    /// <summary>
+    /// Solicita os detalhes da tela (resolução, zoom etc.). Online → envia agora;
+    /// offline → agenda para a próxima reconexão.
+    /// </summary>
+    public RefreshRequestResult RequestDetails(string deviceId)
+        => RequestAction(deviceId, info => info.PendingDetails = true);
+
+    /// <summary>
+    /// Lógica comum de "executa agora se online, senão agenda" para as ações do
+    /// monitor (refresh / screenshot / details).
+    /// </summary>
+    private RefreshRequestResult RequestAction(string deviceId, Action<ScreenInfo> schedule)
     {
         PurgeExpired();
 
@@ -123,7 +150,7 @@ public sealed class ScreenMonitorService
             return new RefreshRequestResult(Found: true, Connected: true, ConnectionId: info.ConnectionId);
         }
 
-        info.PendingRefresh = true;
+        schedule(info);
         return new RefreshRequestResult(Found: true, Connected: false, ConnectionId: null);
     }
 
@@ -180,7 +207,12 @@ public sealed class ScreenMonitorService
     }
 }
 
-public sealed record RegisterResult(ScreenInfo Screen, IReadOnlyList<string> Evicted, bool HadPendingRefresh);
+public sealed record RegisterResult(
+    ScreenInfo Screen,
+    IReadOnlyList<string> Evicted,
+    bool HadPendingRefresh,
+    bool HadPendingScreenshot,
+    bool HadPendingDetails);
 
 public sealed record RefreshRequestResult(bool Found, bool Connected, string? ConnectionId);
 
@@ -199,5 +231,9 @@ public sealed class ScreenInfo
     // Estado de conexão / retenção
     public bool Connected { get; set; }
     public DateTime? DisconnectedAt { get; set; }
+
+    // Ações agendadas para entrega na próxima reconexão (quando a tela está offline).
     public bool PendingRefresh { get; set; }
+    public bool PendingScreenshot { get; set; }
+    public bool PendingDetails { get; set; }
 }

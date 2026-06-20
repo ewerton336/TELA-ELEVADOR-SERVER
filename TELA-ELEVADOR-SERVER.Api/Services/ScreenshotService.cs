@@ -4,7 +4,9 @@ namespace TELA_ELEVADOR_SERVER.Api.Services;
 
 public sealed class ScreenshotService
 {
-    public static readonly TimeSpan Retention = TimeSpan.FromMinutes(10);
+    // Mantemos o último print por tela por bastante tempo para que o admin possa
+    // consultar a "última captura obtida" (com data/hora) muito depois de pedida.
+    public static readonly TimeSpan Retention = TimeSpan.FromHours(24);
 
     private readonly ConcurrentDictionary<string, ScreenshotEntry> _shots = new();
 
@@ -23,6 +25,15 @@ public sealed class ScreenshotService
             return entry;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Data/hora do último print de cada tela (para exibir "último obtido" no monitor).
+    /// </summary>
+    public IReadOnlyDictionary<string, DateTime> GetTimestamps()
+    {
+        Purge();
+        return _shots.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CapturedAt);
     }
 
     private void Purge()

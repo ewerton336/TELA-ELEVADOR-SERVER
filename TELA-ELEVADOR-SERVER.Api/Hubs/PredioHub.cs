@@ -40,11 +40,19 @@ public sealed class PredioHub : Hub
                 AppVersion = appVersion
             });
 
-        // Havia um comando de atualização agendado enquanto a tela estava
-        // offline — entrega agora, fazendo a tela recarregar.
+        // Ações agendadas enquanto a tela estava offline são entregues agora,
+        // ao reconectar (ex.: o elevador saiu de um andar sem internet).
         if (result.HadPendingRefresh)
         {
             await Clients.Caller.SendAsync("ForceRefresh");
+        }
+        if (result.HadPendingScreenshot)
+        {
+            await Clients.Caller.SendAsync("RequestScreenshot");
+        }
+        if (result.HadPendingDetails)
+        {
+            await Clients.Caller.SendAsync("RequestScreenDetails");
         }
     }
 

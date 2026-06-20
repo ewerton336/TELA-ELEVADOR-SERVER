@@ -78,6 +78,7 @@ builder.Services.AddSingleton<IAuthorizationHandler, PredioMatchesSlugHandler>()
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<ScreenMonitorService>();
 builder.Services.AddSingleton<ScreenshotService>();
+builder.Services.AddSingleton<ScreenDetailsService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
