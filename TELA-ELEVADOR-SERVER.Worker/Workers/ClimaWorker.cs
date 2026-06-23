@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TELA_ELEVADOR_SERVER.Domain.Entities;
+using TELA_ELEVADOR_SERVER.Domain.Weather;
 using TELA_ELEVADOR_SERVER.EntityFrameworkCore.Persistence;
 
 namespace TELA_ELEVADOR_SERVER.Worker.Workers;
@@ -16,29 +17,6 @@ public sealed class ClimaWorker : BackgroundService
     private readonly int _httpTimeoutSeconds;
     private readonly int _forecastDays;
     private readonly string _apiBaseUrl;
-
-    private static readonly Dictionary<int, (string Description, string Icon)> WeatherCodeMap = new()
-    {
-        { 0, ("Céu limpo", "☀️") },
-        { 1, ("Principalmente limpo", "🌤️") },
-        { 2, ("Parcialmente nublado", "⛅") },
-        { 3, ("Nublado", "☁️") },
-        { 45, ("Nevoeiro", "🌫️") },
-        { 48, ("Nevoeiro depositador", "🌫️") },
-        { 51, ("Garoa leve", "🌦️") },
-        { 53, ("Garoa moderada", "🌦️") },
-        { 55, ("Garoa densa", "🌧️") },
-        { 61, ("Chuva leve", "🌧️") },
-        { 63, ("Chuva moderada", "⛈️") },
-        { 65, ("Chuva forte", "⛈️") },
-        { 71, ("Neve leve", "❄️") },
-        { 73, ("Neve moderada", "❄️") },
-        { 75, ("Neve forte", "❄️") },
-        { 80, ("Pancadas de chuva leve", "🌧️") },
-        { 81, ("Pancadas de chuva moderada", "⛈️") },
-        { 82, ("Pancadas de chuva violenta", "⛈️") },
-        { 95, ("Tempestade", "⛈️") },
-    };
 
     public ClimaWorker(ILogger<ClimaWorker> logger, IServiceProvider serviceProvider, IConfiguration configuration)
     {
@@ -320,9 +298,7 @@ public sealed class ClimaWorker : BackgroundService
                     if (DateOnly.TryParse(timeArray[i].GetString(), out var dateValue))
                     {
                         var code = (int)codeArray[i].GetDouble();
-                        var (description, icon) = WeatherCodeMap.TryGetValue(code, out var info)
-                            ? info
-                            : ("Desconhecido", "❓");
+                        var (description, icon) = WeatherCodeTranslator.Translate(code);
 
                         data.Dias.Add(new DayWeather
                         {
