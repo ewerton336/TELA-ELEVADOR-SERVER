@@ -1,6 +1,8 @@
+using System.Net.Http;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Moq;
 using TELA_ELEVADOR_SERVER.Api.Controllers;
 
 namespace TELA_ELEVADOR_SERVER.Tests;
@@ -23,7 +25,7 @@ public class MediaControllerTests : IDisposable
             })
             .Build();
 
-        _controller = new MediaController(config);
+        _controller = new MediaController(config, Mock.Of<IHttpClientFactory>());
     }
 
     public void Dispose()

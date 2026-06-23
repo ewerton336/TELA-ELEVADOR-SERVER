@@ -28,6 +28,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
 // Registrar serviços
 builder.Services.AddScoped<CidadeService>();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<IGeocodingService, OpenMeteoGeocodingService>();
 
 // Registrar Workers
 builder.Services.AddHostedService<ClimaWorker>();

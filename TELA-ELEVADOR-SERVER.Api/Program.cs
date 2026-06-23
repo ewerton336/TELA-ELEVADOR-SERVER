@@ -36,6 +36,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<IGeocodingService, OpenMeteoGeocodingService>();
 builder.Services.AddScoped<CidadeService>();
 builder.Services.AddScoped<INoticiaProvider, G1NoticiaProvider>();
 builder.Services.AddScoped<INoticiaProvider, SantaPortalNoticiaProvider>();

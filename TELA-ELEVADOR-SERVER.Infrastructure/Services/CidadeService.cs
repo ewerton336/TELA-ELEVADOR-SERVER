@@ -8,10 +8,12 @@ namespace TELA_ELEVADOR_SERVER.Infrastructure.Services;
 public sealed class CidadeService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IGeocodingService _geocodingService;
 
-    public CidadeService(AppDbContext dbContext)
+    public CidadeService(AppDbContext dbContext, IGeocodingService geocodingService)
     {
         _dbContext = dbContext;
+        _geocodingService = geocodingService;
     }
 
     /// <summary>
@@ -29,10 +31,22 @@ public sealed class CidadeService
             .FirstOrDefaultAsync(c => c.Nome == nomeNormalizado);
 
         if (cidadeExistente != null)
-            return cidadeExistente;
+        {
+            if (CoordenadasInvalidas(cidadeExistente.Latitude, cidadeExistente.Longitude))
+            {
+                var (lat, lon) = await ResolverCoordenadasAsync(nomeCidade);
+                if (!CoordenadasInvalidas(lat, lon))
+                {
+                    cidadeExistente.Latitude = lat;
+                    cidadeExistente.Longitude = lon;
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
 
-        // Tentar obter coordenadas do mapeamento conhecido
-        var (latitude, longitude) = GetCoordinatesForCity(nomeCidade);
+            return cidadeExistente;
+        }
+
+        var (latitude, longitude) = await ResolverCoordenadasAsync(nomeCidade);
 
         var novaCidade = new Cidade
         {
@@ -49,15 +63,32 @@ public sealed class CidadeService
         return novaCidade;
     }
 
+    private static bool CoordenadasInvalidas(double latitude, double longitude)
+        => latitude == 0 && longitude == 0;
+
+    private async Task<(double Latitude, double Longitude)> ResolverCoordenadasAsync(string nomeCidade)
+    {
+        try
+        {
+            var geo = await _geocodingService.GeocodeAsync(nomeCidade);
+            if (geo is not null && !CoordenadasInvalidas(geo.Latitude, geo.Longitude))
+                return (geo.Latitude, geo.Longitude);
+        }
+        catch
+        {
+        }
+
+        return GetCoordinatesForCity(nomeCidade) ?? (0, 0);
+    }
+
     /// <summary>
     /// Obtém coordenadas de uma cidade baseado em um mapeamento hardcoded
     /// Pode ser expandido para usar geocoding API no future
     /// </summary>
-    private static (double latitude, double longitude) GetCoordinatesForCity(string nomeCidade)
+    private static (double latitude, double longitude)? GetCoordinatesForCity(string nomeCidade)
     {
         var nomeNormalizado = StringNormalizer.NormalizeForSearch(nomeCidade);
 
-        // Mapeamento de cidades conhecidas
         var coordenadas = new Dictionary<string, (double, double)>
         {
             { "gramado", (-29.3789, -50.8744) },
@@ -77,8 +108,7 @@ public sealed class CidadeService
         if (coordenadas.TryGetValue(nomeNormalizado, out var coords))
             return coords;
 
-        // Fallback: Praia Grande se não encontrada
-        return (-24.0058, -46.4028);
+        return null;
     }
 
     /// <summary>
