@@ -188,7 +188,7 @@ public sealed class ClimaWorker : BackgroundService
 
     private async Task TryFixUnknownForecastsForCityAsync(AppDbContext dbContext, Cidade cidade, CancellationToken stoppingToken)
     {
-        var url = $"{_apiBaseUrl}?latitude={cidade.Latitude}&longitude={cidade.Longitude}&daily=temperature_2m_max,temperature_2m_min,weather_code&temperature_unit=celsius&timezone=auto";
+        var url = FormattableString.Invariant($"{_apiBaseUrl}?latitude={cidade.Latitude}&longitude={cidade.Longitude}&daily=temperature_2m_max,temperature_2m_min,weather_code&temperature_unit=celsius&timezone=auto");
 
         _logger.LogInformation("Retry: buscando clima para {CidadeNome} para corrigir previsões desconhecidas", cidade.NomeExibicao);
 
@@ -233,7 +233,7 @@ public sealed class ClimaWorker : BackgroundService
     private async Task FetchAndStoreCityWeatherAsync(AppDbContext dbContext, Cidade cidade, CancellationToken stoppingToken)
     {
         // Usar Open-Meteo API (gratuita, sem autenticação necessária)
-        var url = $"{_apiBaseUrl}?latitude={cidade.Latitude}&longitude={cidade.Longitude}&daily=temperature_2m_max,temperature_2m_min,weather_code&temperature_unit=celsius&timezone=auto";
+        var url = FormattableString.Invariant($"{_apiBaseUrl}?latitude={cidade.Latitude}&longitude={cidade.Longitude}&daily=temperature_2m_max,temperature_2m_min,weather_code&temperature_unit=celsius&timezone=auto");
 
         _logger.LogInformation("Buscando clima para {CidadeNome} (Lat: {Latitude}, Lon: {Longitude})", cidade.NomeExibicao, cidade.Latitude, cidade.Longitude);
 
@@ -325,7 +325,7 @@ public sealed class ClimaWorker : BackgroundService
 
     private async Task FetchAndStoreCurrentForCityAsync(AppDbContext dbContext, Cidade cidade, CancellationToken stoppingToken)
     {
-        var url = $"{_apiBaseUrl}?latitude={cidade.Latitude}&longitude={cidade.Longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day&temperature_unit=celsius&timezone=auto";
+        var url = FormattableString.Invariant($"{_apiBaseUrl}?latitude={cidade.Latitude}&longitude={cidade.Longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day&temperature_unit=celsius&timezone=auto");
 
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(_httpTimeoutSeconds) };
         var response = await client.GetAsync(url, stoppingToken);
