@@ -41,11 +41,29 @@ public sealed class PublicClimaController : ControllerBase
             .OrderBy(cp => cp.Data)
             .ToListAsync();
 
+        var climaAtual = await _dbContext.ClimaAtuaisData
+            .AsNoTracking()
+            .FirstOrDefaultAsync(ca => ca.CidadeId == predio.CidadeId);
+
+        object? currentDto = climaAtual is null ? null : new
+        {
+            temperature = climaAtual.Temperatura,
+            apparentTemperature = climaAtual.SensacaoTermica,
+            humidity = climaAtual.Umidade,
+            windSpeed = climaAtual.VentoVelocidade,
+            weatherCode = climaAtual.CodigoWmo,
+            weatherDescription = climaAtual.Descricao,
+            weatherIcon = climaAtual.Icone,
+            isDay = climaAtual.IsDay,
+            lastUpdated = climaAtual.AtualizadoEm,
+        };
+
         if (!previsoes.Any())
         {
             return Ok(new
             {
                 location = predio.Cidade.NomeExibicao,
+                current = currentDto,
                 days = new List<object>(),
                 lastUpdated = DateTime.UtcNow
             });
@@ -67,6 +85,7 @@ public sealed class PublicClimaController : ControllerBase
         return Ok(new
         {
             location = predio.Cidade.NomeExibicao,
+            current = currentDto,
             days = dias,
             lastUpdated = previsoes.Max(p => p.AtualizadoEm)
         });

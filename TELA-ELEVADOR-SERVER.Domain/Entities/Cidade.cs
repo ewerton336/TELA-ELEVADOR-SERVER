@@ -24,4 +24,5 @@ public sealed class Cidade : BaseEntity
 
     public ICollection<Predio> Predios { get; set; } = new List<Predio>();
     public ICollection<ClimaPrevisao> ClimaPrevisoesData { get; set; } = new List<ClimaPrevisao>();
+    public ClimaAtual? ClimaAtual { get; set; }
 }

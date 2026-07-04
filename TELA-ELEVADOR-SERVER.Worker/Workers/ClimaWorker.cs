@@ -17,6 +17,7 @@ public sealed class ClimaWorker : BackgroundService
     private readonly int _httpTimeoutSeconds;
     private readonly int _forecastDays;
     private readonly string _apiBaseUrl;
+    private readonly int _intervalAtualMinutes;
 
     public ClimaWorker(ILogger<ClimaWorker> logger, IServiceProvider serviceProvider, IConfiguration configuration)
     {
@@ -27,17 +28,25 @@ public sealed class ClimaWorker : BackgroundService
         _httpTimeoutSeconds = Math.Max(5, configuration.GetValue("ClimaWorker:HttpTimeoutSegundos", 30));
         _forecastDays = Math.Max(1, configuration.GetValue("ClimaWorker:DiasPrevisao", 7));
         _apiBaseUrl = configuration.GetValue("ClimaWorker:ApiUrl", "https://api.open-meteo.com/v1/forecast")!;
+        _intervalAtualMinutes = Math.Max(1, configuration.GetValue("ClimaWorker:IntervaloAtualMinutos", 15));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("ClimaWorker iniciado. Intervalo: {IntervalMinutes} minutos", _intervalMinutes);
+        _logger.LogInformation(
+            "ClimaWorker iniciado. Previsão: {IntervalMinutes} min · Atual: {IntervalAtual} min",
+            _intervalMinutes, _intervalAtualMinutes);
 
-        // Executar uma vez na inicialização
+        await Task.WhenAll(
+            RunPrevisaoLoopAsync(stoppingToken),
+            RunAtualLoopAsync(stoppingToken));
+    }
+
+    private async Task RunPrevisaoLoopAsync(CancellationToken stoppingToken)
+    {
         await FetchAndStoreClimateAsync(stoppingToken);
         await RetryUnknownForecastsAsync(stoppingToken);
 
-        // Executar periodicamente
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(_intervalMinutes));
         try
         {
@@ -49,7 +58,25 @@ public sealed class ClimaWorker : BackgroundService
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation("ClimaWorker cancelado");
+            _logger.LogInformation("ClimaWorker (previsão) cancelado");
+        }
+    }
+
+    private async Task RunAtualLoopAsync(CancellationToken stoppingToken)
+    {
+        await FetchAndStoreCurrentAsync(stoppingToken);
+
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(_intervalAtualMinutes));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+            {
+                await FetchAndStoreCurrentAsync(stoppingToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("ClimaWorker (atual) cancelado");
         }
     }
 
@@ -255,6 +282,80 @@ public sealed class ClimaWorker : BackgroundService
         }
     }
 
+    private async Task FetchAndStoreCurrentAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            using var scope = _serviceProvider.CreateAsyncScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var cidadeIds = await dbContext.Predios
+                .Where(p => p.CidadeId.HasValue)
+                .Select(p => p.CidadeId!.Value)
+                .Distinct()
+                .ToListAsync(stoppingToken);
+
+            var cidades = await dbContext.Cidades
+                .Where(c => cidadeIds.Contains(c.Id))
+                .ToListAsync(stoppingToken);
+
+            if (cidades.Count == 0)
+                return;
+
+            foreach (var cidade in cidades)
+            {
+                try
+                {
+                    await FetchAndStoreCurrentForCityAsync(dbContext, cidade, stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Erro ao buscar clima atual para cidade {CidadeNome}", cidade.NomeExibicao);
+                }
+            }
+
+            await dbContext.SaveChangesAsync(stoppingToken);
+            _logger.LogInformation("Clima atual atualizado para {CidadeCount} cidade(s)", cidades.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao buscar clima atual");
+        }
+    }
+
+    private async Task FetchAndStoreCurrentForCityAsync(AppDbContext dbContext, Cidade cidade, CancellationToken stoppingToken)
+    {
+        var url = $"{_apiBaseUrl}?latitude={cidade.Latitude}&longitude={cidade.Longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day&temperature_unit=celsius&timezone=auto";
+
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(_httpTimeoutSeconds) };
+        var response = await client.GetAsync(url, stoppingToken);
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadAsStringAsync(stoppingToken);
+        var atual = ParseOpenMeteoCurrent(json);
+        if (atual == null)
+            return;
+
+        var registro = await dbContext.ClimaAtuaisData
+            .FirstOrDefaultAsync(ca => ca.CidadeId == cidade.Id, stoppingToken);
+
+        if (registro == null)
+        {
+            registro = new ClimaAtual { CidadeId = cidade.Id, CriadoEm = DateTime.UtcNow };
+            dbContext.ClimaAtuaisData.Add(registro);
+        }
+
+        registro.Temperatura = atual.Temperatura;
+        registro.SensacaoTermica = atual.SensacaoTermica;
+        registro.Umidade = atual.Umidade;
+        registro.VentoVelocidade = atual.VentoVelocidade;
+        registro.CodigoWmo = atual.CodigoWmo;
+        registro.Descricao = atual.Descricao;
+        registro.Icone = atual.Icone;
+        registro.IsDay = atual.IsDay;
+        registro.AtualizadoEm = DateTime.UtcNow;
+    }
+
     private class WeatherData
     {
         public List<DayWeather> Dias { get; set; } = new();
@@ -268,6 +369,18 @@ public sealed class ClimaWorker : BackgroundService
         public int CodigoWmo { get; set; }
         public string Descricao { get; set; } = string.Empty;
         public string Icone { get; set; } = string.Empty;
+    }
+
+    private sealed class CurrentWeather
+    {
+        public int Temperatura { get; set; }
+        public int SensacaoTermica { get; set; }
+        public int Umidade { get; set; }
+        public double VentoVelocidade { get; set; }
+        public int CodigoWmo { get; set; }
+        public string Descricao { get; set; } = string.Empty;
+        public string Icone { get; set; } = string.Empty;
+        public bool IsDay { get; set; }
     }
 
     private WeatherData? ParseOpenMeteoResponse(string json)
@@ -318,6 +431,45 @@ public sealed class ClimaWorker : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao fazer parse da resposta Open-Meteo");
+            return null;
+        }
+    }
+
+    private CurrentWeather? ParseOpenMeteoCurrent(string json)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("current", out var current))
+                return null;
+
+            if (!current.TryGetProperty("temperature_2m", out var t) ||
+                !current.TryGetProperty("weather_code", out var wc))
+            {
+                _logger.LogWarning("Resposta 'current' da Open-Meteo sem temperatura ou weather_code; ignorando.");
+                return null;
+            }
+
+            var code = (int)wc.GetDouble();
+            var (description, icon) = WeatherCodeTranslator.Translate(code);
+
+            return new CurrentWeather
+            {
+                Temperatura = (int)Math.Round(t.GetDouble()),
+                SensacaoTermica = current.TryGetProperty("apparent_temperature", out var at) ? (int)Math.Round(at.GetDouble()) : 0,
+                Umidade = current.TryGetProperty("relative_humidity_2m", out var rh) ? (int)Math.Round(rh.GetDouble()) : 0,
+                VentoVelocidade = current.TryGetProperty("wind_speed_10m", out var ws) ? ws.GetDouble() : 0,
+                CodigoWmo = code,
+                Descricao = description,
+                Icone = icon,
+                IsDay = current.TryGetProperty("is_day", out var isd) && isd.GetDouble() >= 1,
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao fazer parse do current Open-Meteo");
             return null;
         }
     }

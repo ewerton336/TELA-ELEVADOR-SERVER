@@ -21,6 +21,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<NoticiaInterna> NoticiasInternas => Set<NoticiaInterna>();
     public DbSet<Cidade> Cidades => Set<Cidade>();
     public DbSet<ClimaPrevisao> ClimaPrevisoesData => Set<ClimaPrevisao>();
+    public DbSet<ClimaAtual> ClimaAtuaisData => Set<ClimaAtual>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
