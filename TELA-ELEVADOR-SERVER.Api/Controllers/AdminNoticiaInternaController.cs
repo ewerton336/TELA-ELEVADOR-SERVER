@@ -20,15 +20,51 @@ public sealed class AdminNoticiaInternaController : ControllerBase
     private readonly string _mediaPublicUrl;
     private const long MaxFileSizeBytes = 25 * 1024 * 1024; // 25 MB
 
-    private static readonly HashSet<string> AllowedImageTypes = new(StringComparer.OrdinalIgnoreCase)
+    internal readonly record struct MediaKind(string TipoMidia, string Extensao, string ContentType);
+
+    // Content-Types aceitos. Inclui variantes não-padrão que celulares mandam
+    // (image/jpg, image/pjpeg) para não rejeitar upload legítimo do usuário.
+    private static readonly Dictionary<string, MediaKind> ContentTypeMap = new(StringComparer.OrdinalIgnoreCase)
     {
-        "image/jpeg", "image/png", "image/gif", "image/webp"
+        ["image/jpeg"]  = new("imagem", ".jpg", "image/jpeg"),
+        ["image/jpg"]   = new("imagem", ".jpg", "image/jpeg"),
+        ["image/pjpeg"] = new("imagem", ".jpg", "image/jpeg"),
+        ["image/png"]   = new("imagem", ".png", "image/png"),
+        ["image/gif"]   = new("imagem", ".gif", "image/gif"),
+        ["image/webp"]  = new("imagem", ".webp", "image/webp"),
+        ["video/mp4"]   = new("video", ".mp4", "video/mp4"),
+        ["video/webm"]  = new("video", ".webm", "video/webm"),
     };
 
-    private static readonly HashSet<string> AllowedVideoTypes = new(StringComparer.OrdinalIgnoreCase)
+    // Fallback por extensão quando o Content-Type do navegador é genérico
+    // (application/octet-stream) ou ausente — comum em uploads mobile.
+    private static readonly Dictionary<string, MediaKind> ExtensionMap = new(StringComparer.OrdinalIgnoreCase)
     {
-        "video/mp4", "video/webm"
+        [".jpg"]  = new("imagem", ".jpg", "image/jpeg"),
+        [".jpeg"] = new("imagem", ".jpg", "image/jpeg"),
+        [".png"]  = new("imagem", ".png", "image/png"),
+        [".gif"]  = new("imagem", ".gif", "image/gif"),
+        [".webp"] = new("imagem", ".webp", "image/webp"),
+        [".mp4"]  = new("video", ".mp4", "video/mp4"),
+        [".webm"] = new("video", ".webm", "video/webm"),
     };
+
+    // Resolve o tipo de mídia priorizando o Content-Type; se ele for genérico ou
+    // desconhecido, cai para a extensão do arquivo. Sempre devolve uma extensão
+    // canônica em minúsculas, garantindo que o MediaController sirva com o
+    // Content-Type certo depois. Retorna null se nada casar.
+    internal static MediaKind? ResolveMedia(IFormFile arquivo)
+    {
+        var contentType = arquivo.ContentType?.Trim();
+        if (!string.IsNullOrEmpty(contentType) && ContentTypeMap.TryGetValue(contentType, out var byContentType))
+            return byContentType;
+
+        var ext = Path.GetExtension(arquivo.FileName);
+        if (!string.IsNullOrEmpty(ext) && ExtensionMap.TryGetValue(ext, out var byExtension))
+            return byExtension;
+
+        return null;
+    }
 
     public AdminNoticiaInternaController(
         AppDbContext dbContext,
@@ -90,18 +126,13 @@ public sealed class AdminNoticiaInternaController : ControllerBase
         if (arquivo.Length > MaxFileSizeBytes)
             return BadRequest(new { message = "Arquivo excede o limite de 25 MB." });
 
-        var contentType = arquivo.ContentType;
-        string tipoMidia;
+        var media = ResolveMedia(arquivo);
+        if (media is null)
+            return BadRequest(new { message = "Formato não suportado. Envie uma imagem (JPEG, PNG, GIF, WebP) ou vídeo (MP4, WebM)." });
 
-        if (AllowedImageTypes.Contains(contentType))
-            tipoMidia = "imagem";
-        else if (AllowedVideoTypes.Contains(contentType))
-            tipoMidia = "video";
-        else
-            return BadRequest(new { message = "Tipo de arquivo não permitido. Use imagem (JPEG, PNG, GIF, WebP) ou vídeo (MP4, WebM)." });
-
-        var ext = Path.GetExtension(arquivo.FileName);
-        var nomeArquivo = $"{Guid.NewGuid()}{ext}";
+        var tipoMidia = media.Value.TipoMidia;
+        var contentType = media.Value.ContentType;
+        var nomeArquivo = $"{Guid.NewGuid()}{media.Value.Extensao}";
         var filePath = Path.Combine(_mediaBasePath, nomeArquivo);
 
         Directory.CreateDirectory(_mediaBasePath);
@@ -180,23 +211,16 @@ public sealed class AdminNoticiaInternaController : ControllerBase
             if (arquivo.Length > MaxFileSizeBytes)
                 return BadRequest(new { message = "Arquivo excede o limite de 25 MB." });
 
-            var contentType = arquivo.ContentType;
-            string tipoMidia;
-
-            if (AllowedImageTypes.Contains(contentType))
-                tipoMidia = "imagem";
-            else if (AllowedVideoTypes.Contains(contentType))
-                tipoMidia = "video";
-            else
-                return BadRequest(new { message = "Tipo de arquivo não permitido." });
+            var media = ResolveMedia(arquivo);
+            if (media is null)
+                return BadRequest(new { message = "Formato não suportado. Envie uma imagem (JPEG, PNG, GIF, WebP) ou vídeo (MP4, WebM)." });
 
             // Delete old file
             var oldFilePath = Path.Combine(_mediaBasePath, noticia.NomeArquivo);
             if (System.IO.File.Exists(oldFilePath))
                 System.IO.File.Delete(oldFilePath);
 
-            var ext = Path.GetExtension(arquivo.FileName);
-            var nomeArquivo = $"{Guid.NewGuid()}{ext}";
+            var nomeArquivo = $"{Guid.NewGuid()}{media.Value.Extensao}";
             var newFilePath = Path.Combine(_mediaBasePath, nomeArquivo);
 
             await using (var stream = new FileStream(newFilePath, FileMode.Create))
@@ -204,10 +228,10 @@ public sealed class AdminNoticiaInternaController : ControllerBase
                 await arquivo.CopyToAsync(stream);
             }
 
-            noticia.TipoMidia = tipoMidia;
+            noticia.TipoMidia = media.Value.TipoMidia;
             noticia.NomeArquivo = nomeArquivo;
             noticia.NomeArquivoOriginal = arquivo.FileName;
-            noticia.ContentType = contentType;
+            noticia.ContentType = media.Value.ContentType;
         }
 
         await _dbContext.SaveChangesAsync();
