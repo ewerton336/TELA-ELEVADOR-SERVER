@@ -47,6 +47,7 @@ public sealed partial class NoticiaService : INoticiaService
 
         // Agrupar por fonte mantendo ordem por data dentro de cada grupo
         var porFonte = noticias
+            .Where(n => !string.IsNullOrWhiteSpace(n.ImagemUrl))
             .GroupBy(n => n.FonteChave)
             .ToDictionary(
                 g => g.Key,

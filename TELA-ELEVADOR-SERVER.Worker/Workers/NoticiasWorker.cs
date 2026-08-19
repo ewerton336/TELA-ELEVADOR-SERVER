@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -9,6 +10,10 @@ namespace TELA_ELEVADOR_SERVER.Worker.Workers;
 
 public sealed class NoticiasWorker : BackgroundService
 {
+    private static readonly Regex ImgSrcRegex = new(
+        @"<img[^>]+src=[""']([^""']+)[""']",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     private readonly ILogger<NoticiasWorker> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly int _intervalMinutes;
@@ -16,6 +21,7 @@ public sealed class NoticiasWorker : BackgroundService
     private readonly int _retentionDays;
     private readonly int _httpTimeoutSeconds;
     private readonly int _maxNoticiasPorFonte;
+    private readonly int _maxItensPorLeitura;
     private readonly string _httpUserAgent;
 
     public NoticiasWorker(ILogger<NoticiasWorker> logger, IServiceProvider serviceProvider, IConfiguration configuration)
@@ -27,6 +33,7 @@ public sealed class NoticiasWorker : BackgroundService
         _retentionDays = Math.Max(1, configuration.GetValue("NoticiasWorker:RetencaoDias", 7));
         _httpTimeoutSeconds = Math.Max(5, configuration.GetValue("NoticiasWorker:HttpTimeoutSegundos", 60));
         _maxNoticiasPorFonte = Math.Max(1, configuration.GetValue("NoticiasWorker:MaxNoticiasPorFonte", 500));
+        _maxItensPorLeitura = Math.Max(1, configuration.GetValue("NoticiasWorker:MaxItensPorLeitura", 15));
         _httpUserAgent = configuration.GetValue("NoticiasWorker:UserAgent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")!;
     }
 
@@ -195,7 +202,7 @@ public sealed class NoticiasWorker : BackgroundService
                 return noticias;
             }
 
-            foreach (System.Xml.XmlNode node in nodes)
+            foreach (System.Xml.XmlNode node in nodes.Cast<System.Xml.XmlNode>().Take(_maxItensPorLeitura))
             {
                 try
                 {
@@ -204,10 +211,13 @@ public sealed class NoticiasWorker : BackgroundService
                     var link = node.SelectSingleNode("link")?.InnerText?.Trim() ?? "";
                     var pubDate = node.SelectSingleNode("pubDate")?.InnerText?.Trim() ?? DateTime.UtcNow.ToString("o");
 
-                    // Buscar imagem em múltiplos formatos (RSS padrão, media:content do G1, enclosure)
-                    var imagem = node.SelectSingleNode("image/url")?.InnerText?.Trim() ??
-                                 node.SelectSingleNode("*[local-name()='content']")?.Attributes?["url"]?.Value ??
-                                 node.SelectSingleNode("enclosure")?.Attributes?["url"]?.Value ?? "";
+                    var imagem = Blank(node.SelectSingleNode("image/url")?.InnerText)
+                                 ?? Blank(node.SelectSingleNode("*[local-name()='content']")?.Attributes?["url"]?.Value)
+                                 ?? Blank(node.SelectSingleNode("*[local-name()='thumbnail']")?.Attributes?["url"]?.Value)
+                                 ?? Blank(node.SelectSingleNode("enclosure")?.Attributes?["url"]?.Value)
+                                 ?? ExtractFirstImage(node.SelectSingleNode("*[local-name()='encoded']")?.InnerText)
+                                 ?? ExtractFirstImage(descricao)
+                                 ?? "";
 
                     if (string.IsNullOrWhiteSpace(titulo))
                         continue;
@@ -266,5 +276,21 @@ public sealed class NoticiasWorker : BackgroundService
         }
 
         return noticias;
+    }
+
+    private static string? Blank(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string? ExtractFirstImage(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return null;
+        }
+
+        var match = ImgSrcRegex.Match(System.Net.WebUtility.HtmlDecode(html));
+        return match.Success ? match.Groups[1].Value.Trim() : null;
     }
 }
