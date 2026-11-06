@@ -1,144 +1,48 @@
-name: Deploy Server to VPS
-
+name: Build arm64 (rpi43)
+# Build das imagens arm64 (API + Worker) no GitHub e push para o GHCR com a tag :rpi43.
+# O deploy é feito pelo Watchtower no rpi43, que puxa a tag :rpi43 nova e recria os containers.
 on:
   push:
     branches: [master]
-
-  pull_request:
-    branches: [master]
-    types: [closed]
-
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+concurrency:
+  group: build-rpi43
+  cancel-in-progress: true
 jobs:
-  deploy:
-    name: Build & Deploy API + Worker
-    runs-on: ubuntu-latest
-
-    if: >
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
-
-    permissions:
-      contents: read
-      packages: write
-
-    env:
-      IMAGE_API: ghcr.io/ewerton336/tela-elevador-server-api
-      IMAGE_WORKER: ghcr.io/ewerton336/tela-elevador-server-worker
-
+  build:
+    runs-on: ubuntu-24.04-arm
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
-
-      - name: Configurar Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login no GitHub Container Registry
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build e push imagem da API
+      - name: Build e push da API
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
+          platforms: linux/arm64
           push: true
           tags: |
-            ${{ env.IMAGE_API }}:latest
-            ${{ env.IMAGE_API }}:${{ github.sha }}
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
-
-      - name: Build e push imagem do Worker
+            ghcr.io/ewerton336/elevador-api:rpi43
+            ghcr.io/ewerton336/elevador-api:rpi43-${{ github.sha }}
+          cache-from: type=gha,scope=elevador-api
+          cache-to: type=gha,mode=max,scope=elevador-api
+      - name: Build e push do Worker
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile.worker
+          platforms: linux/arm64
           push: true
           tags: |
-            ${{ env.IMAGE_WORKER }}:latest
-            ${{ env.IMAGE_WORKER }}:${{ github.sha }}
-          cache-from: type=gha,scope=worker
-          cache-to: type=gha,mode=max,scope=worker
-
-      - name: Configurar SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
-      - name: Adicionar VPS ao known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Enviar docker-compose.yml para a VPS
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "mkdir -p ${{ secrets.VPS_DEPLOY_DIR_SERVER }}"
-          scp docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_DIR_SERVER }}/docker-compose.yml
-
-      - name: Deploy no servidor
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
-            set -e
-            cd "${{ secrets.VPS_DEPLOY_DIR_SERVER }}"
-
-            export DB_HOST="${{ secrets.DB_HOST }}"
-            export DB_PORT="${{ secrets.DB_PORT }}"
-            export DB_NAME="${{ secrets.DB_NAME }}"
-            export DB_USER="${{ secrets.DB_USER }}"
-            export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-            export JWT_KEY="${{ secrets.JWT_KEY }}"
-
-            echo "=== Autenticando no ghcr.io ==="
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-
-            echo "=== Baixando imagens mais recentes ==="
-            docker compose pull
-
-            echo "=== Subindo containers (api + worker) ==="
-            docker compose up -d
-
-            docker logout ghcr.io || true
-
-            echo "=== Aguardando inicialização (15s) ==="
-            sleep 15
-
-            echo "=== Containers ==="
-            docker ps --filter name=elevador_
-
-            echo "=== Health check API (porta 8080) ==="
-            HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/swagger/index.html || echo "000")
-            if [ "$HTTP_STATUS" = "200" ]; then
-              echo "API respondendo com HTTP $HTTP_STATUS"
-            else
-              echo "API respondeu com HTTP $HTTP_STATUS"
-              echo "=== Últimos logs da API ==="
-              docker compose logs --tail=80 api
-              exit 1
-            fi
-
-            echo "=== Verificando Worker ==="
-            if docker ps --filter name=elevador_worker --filter status=running --format '{{.Names}}' | grep -q elevador_worker; then
-              echo "Worker rodando"
-            else
-              echo "Worker não está rodando"
-              docker compose logs --tail=80 worker
-              exit 1
-            fi
-
-            echo "=== Limpando imagens antigas ==="
-            docker image prune -f || true
-
-            echo "=== Deploy concluído ==="
-          DEPLOY_SCRIPT
-
-      - name: Verificar domínio público
-        run: |
-          echo "Testando https://elevador.ewertondev.com.br/swagger/index.html ..."
-          HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' https://elevador.ewertondev.com.br/swagger/index.html || echo "000")
-          echo "Status: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "Domínio público retornou $HTTP_STATUS (verifique propagação/Nginx)"
-          fi
+            ghcr.io/ewerton336/elevador-worker:rpi43
+            ghcr.io/ewerton336/elevador-worker:rpi43-${{ github.sha }}
+          cache-from: type=gha,scope=elevador-worker
+          cache-to: type=gha,mode=max,scope=elevador-worker
